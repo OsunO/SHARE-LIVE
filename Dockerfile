@@ -28,6 +28,9 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+# 安装 OpenSSL (Prisma 需要)
+RUN apk add --no-cache openssl
+
 # 创建非 root 用户
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs

@@ -5,10 +5,12 @@ const openai = new OpenAI({
   baseURL: process.env.OPENAI_BASE_URL || 'https://api.moonshot.cn/v1'
 })
 
+const MODEL = process.env.OPENAI_MODEL || 'moonshot-v1-8k'
+
 export async function analyzeImage(base64Image: string) {
   try {
     const response = await openai.chat.completions.create({
-      model: 'kimi-k2-thinking-turbo',
+      model: MODEL,
       messages: [
         {
           role: 'system',
@@ -46,7 +48,7 @@ export async function analyzeImage(base64Image: string) {
 export async function moderateContent(text: string) {
   try {
     const response = await openai.chat.completions.create({
-      model: 'kimi-k2-thinking-turbo',
+      model: MODEL,
       messages: [
         {
           role: 'system',
