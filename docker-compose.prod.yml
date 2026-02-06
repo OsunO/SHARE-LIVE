@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:ShareLive2024@db:5432/sharelive?schema=public
+      - NEXTAUTH_URL=http://101.34.245.133:3000
+      - NEXTAUTH_SECRET=SrlxrQ30v49c+tMNeiTkkM88Xk1/zGPLAAzG5iTlZuI=
+      - UPLOAD_PROVIDER=local
+      - NODE_ENV=production
+    depends_on:
+      - db
+    volumes:
+      - uploads:/app/public/uploads
+    networks:
+      - sharelive-network
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=ShareLive2024
+      - POSTGRES_DB=sharelive
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - sharelive-network
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  uploads:
+
+networks:
+  sharelive-network:
+    driver: bridge

@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth/next'
 import { redirect } from 'next/navigation'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { Feed } from '@/components/feed'
 import { Navbar } from '@/components/navbar'

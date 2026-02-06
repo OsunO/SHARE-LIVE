@@ -8,7 +8,7 @@ WORKDIR /app
 
 # 安装依赖
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 # 构建应用
 FROM base AS builder
