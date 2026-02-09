@@ -3,13 +3,18 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+const POSTS_PER_PAGE = 10
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
     if (!session?.user?.id) {
       return NextResponse.json({ error: '未登录' }, { status: 401 })
     }
+
+    const { searchParams } = new URL(req.url)
+    const cursor = searchParams.get('cursor')
+    const limit = parseInt(searchParams.get('limit') || String(POSTS_PER_PAGE))
 
     const posts = await prisma.post.findMany({
       where: { published: true },
@@ -19,13 +24,32 @@ export async function GET(req: NextRequest) {
         },
         _count: {
           select: { likes: true, comments: true, favorites: true }
+        },
+        likes: {
+          where: { userId: session.user.id },
+          select: { id: true }
+        },
+        favorites: {
+          where: { userId: session.user.id },
+          select: { id: true }
         }
       },
+      ...(cursor && {
+        cursor: { id: cursor },
+        skip: 1
+      }),
       orderBy: { createdAt: 'desc' },
-      take: 20
+      take: limit
     })
 
-    return NextResponse.json(posts)
+    const lastPost = posts[posts.length - 1]
+    const nextCursor = lastPost?.id || null
+
+    return NextResponse.json({
+      posts,
+      nextCursor,
+      hasMore: posts.length === limit
+    })
   } catch (error) {
     console.error('Get posts error:', error)
     return NextResponse.json({ error: '获取失败' }, { status: 500 })
@@ -35,7 +59,6 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
     if (!session?.user?.id) {
       return NextResponse.json({ error: '未登录' }, { status: 401 })
     }
