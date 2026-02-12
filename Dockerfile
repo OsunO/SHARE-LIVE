@@ -16,11 +16,16 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# 设置构建时内存限制 (1.5GB)
+ARG NODE_OPTIONS
+ENV NODE_OPTIONS=${NODE_OPTIONS:-"--max-old-space-size=1536"}
+
 # 生成 Prisma Client (使用本地安装的 prisma)
 RUN npm run db:generate
 
-# 构建 Next.js 应用
-RUN npm run build
+# 构建 Next.js 应用 (限制并发以减少内存)
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN NODE_OPTIONS="${NODE_OPTIONS}" npm run build
 
 # 生产环境
 FROM base AS runner

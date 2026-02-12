@@ -1,10 +1,16 @@
-version: '3.8'
-
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - NODE_OPTIONS=--max-old-space-size=1280
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
     ports:
       - "3000:3000"
     environment:
@@ -12,6 +18,7 @@ services:
       - NEXTAUTH_URL=http://localhost:3000
       - NEXTAUTH_SECRET=your-secret-key-change-in-production
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - NODE_OPTIONS=--max-old-space-size=384
     depends_on:
       - db
     volumes:
@@ -21,10 +28,19 @@ services:
 
   db:
     image: postgres:16-alpine
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=sharelive
+      - POSTGRES_SHARED_BUFFERS=64MB
+      - POSTGRES_WORK_MEM=8MB
+      - POSTGRES_MAINTENANCE_WORK_MEM=32MB
     ports:
       - "5432:5432"
     volumes:
