@@ -1,13 +1,29 @@
 import OpenAI from 'openai'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  baseURL: process.env.OPENAI_BASE_URL || 'https://api.moonshot.cn/v1'
-})
+// 延迟初始化：避免在构建时因缺少 API Key 而失败
+let openaiClient: OpenAI | null = null
+
+function getOpenAIClient(): OpenAI | null {
+  if (!openaiClient && process.env.OPENAI_API_KEY) {
+    openaiClient = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      baseURL: process.env.OPENAI_BASE_URL || 'https://api.moonshot.cn/v1'
+    })
+  }
+  return openaiClient
+}
 
 const MODEL = process.env.OPENAI_MODEL || 'moonshot-v1-8k'
 
 export async function analyzeImage(base64Image: string) {
+  const openai = getOpenAIClient()
+  
+  // 如果没有配置 AI，返回空结果
+  if (!openai) {
+    console.warn('AI not configured: returning empty analysis')
+    return { description: '', tags: [] }
+  }
+  
   try {
     const response = await openai.chat.completions.create({
       model: MODEL,
@@ -34,7 +50,7 @@ export async function analyzeImage(base64Image: string) {
     const content = response.choices[0]?.message?.content || ''
     const [description, tagsStr] = content.split('\n')
     const tags = tagsStr?.split(',').map(t => t.trim()).filter(Boolean) || []
-
+    
     return {
       description: description?.trim() || '',
       tags
@@ -46,6 +62,13 @@ export async function analyzeImage(base64Image: string) {
 }
 
 export async function moderateContent(text: string) {
+  const openai = getOpenAIClient()
+  
+  // 如果没有配置 AI，默认通过审核
+  if (!openai) {
+    return true
+  }
+  
   try {
     const response = await openai.chat.completions.create({
       model: MODEL,
