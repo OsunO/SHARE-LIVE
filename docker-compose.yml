@@ -19,7 +19,8 @@ services:
       - NEXTAUTH_SECRET=SrlxrQ30v49c+tMNeiTkkM88Xk1/zGPLAAzG5iTlZuI=
       - UPLOAD_PROVIDER=minio
       - MINIO_ENDPOINT=minio
-      - MINIO_PORT=17678
+      - MINIO_PORT=9000
+      - MINIO_PUBLIC_PORT=17678
       - MINIO_USE_SSL=false
       - MINIO_ACCESS_KEY=sharelive
       - MINIO_SECRET_KEY=sharelive2024
