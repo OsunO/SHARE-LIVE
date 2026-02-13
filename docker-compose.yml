@@ -67,15 +67,18 @@ services:
       - MINIO_ROOT_USER=sharelive
       - MINIO_ROOT_PASSWORD=sharelive2024
     volumes:
-      - minio-data:/data
+      - /data/minio:/data
     command: server /data --console-address ":9001"
     networks:
       - sharelive-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
 volumes:
   postgres-data:
   uploads:
-  minio-data:
 
 networks:
   sharelive-network:
