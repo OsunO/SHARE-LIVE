@@ -15,12 +15,22 @@ services:
       - "3000:3000"
     environment:
       - DATABASE_URL=postgresql://postgres:password@db:5432/sharelive?schema=public
-      - NEXTAUTH_URL=http://localhost:3000
-      - NEXTAUTH_SECRET=your-secret-key-change-in-production
+      - NEXTAUTH_URL=http://101.34.245.133:3000
+      - NEXTAUTH_SECRET=SrlxrQ30v49c+tMNeiTkkM88Xk1/zGPLAAzG5iTlZuI=
+      - UPLOAD_PROVIDER=minio
+      - MINIO_ENDPOINT=minio
+      - MINIO_PORT=9000
+      - MINIO_USE_SSL=false
+      - MINIO_ACCESS_KEY=sharelive
+      - MINIO_SECRET_KEY=sharelive2024
+      - MINIO_BUCKET_NAME=sharelive-uploads
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=https://ai-01.waveterm.in/v1
+      - OPENAI_MODEL=nvidia/moonshotai/kimi-k2.5
       - NODE_OPTIONS=--max-old-space-size=384
     depends_on:
       - db
+      - minio
     volumes:
       - uploads:/app/public/uploads
     networks:
@@ -48,9 +58,24 @@ services:
     networks:
       - sharelive-network
 
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=sharelive
+      - MINIO_ROOT_PASSWORD=sharelive2024
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - sharelive-network
+
 volumes:
   postgres-data:
   uploads:
+  minio-data:
 
 networks:
   sharelive-network:
