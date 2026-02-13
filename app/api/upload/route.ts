@@ -78,9 +78,8 @@ export async function POST(req: NextRequest) {
         { 'Content-Type': file.type || 'image/jpeg' }
       )
       
-      // 构建 URL
-      const minioPort = process.env.MINIO_PORT || '9000'
-      url = `http://101.34.245.133:${minioPort}/${bucketName}/${filename}`
+        // 构建 URL - 外部访问端口可能不同于内部端口
+      url = `http://101.34.245.133:${process.env.MINIO_PUBLIC_PORT || process.env.MINIO_PORT || '9000'}/${bucketName}/${filename}`
     } else {
       // 本地存储
       const uploadDir = join(process.cwd(), 'public', 'uploads')
