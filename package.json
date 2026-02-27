@@ -27,6 +27,7 @@
     "cloudinary": "^2.0.0",
     "clsx": "^2.1.0",
     "date-fns": "^3.3.1",
+    "framer-motion": "^12.34.3",
     "lucide-react": "^0.312.0",
     "minio": "^8.0.6",
     "next": "14.1.0",
