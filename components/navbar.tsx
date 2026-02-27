@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
-import { PlusCircle, User, LogOut, Home, Compass } from 'lucide-react'
+import { PlusCircle, User, LogOut, Home, Compass, Bell } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 interface NavbarProps {
   user: {

@@ -38,6 +38,24 @@ export async function POST(
         data: { userId, postId }
       })
       
+      // 获取帖子作者，发送通知
+      const post = await prisma.post.findUnique({
+        where: { id: postId },
+        select: { authorId: true }
+      })
+      
+      if (post && post.authorId !== userId) {
+        await prisma.notification.create({
+          data: {
+            type: 'LIKE',
+            title: '赞了你的帖子',
+            recipientId: post.authorId,
+            actorId: userId,
+            postId
+          }
+        })
+      }
+      
       const likeCount = await prisma.like.count({
         where: { postId }
       })

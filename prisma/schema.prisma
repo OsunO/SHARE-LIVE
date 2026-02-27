@@ -129,3 +129,67 @@ model Follow {
 
   @@unique([followerId, followingId])
 }
+
+enum NotificationType {
+  LIKE
+  COMMENT
+  FOLLOW
+  MENTION
+  SYSTEM
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  type        NotificationType
+  title       String
+  content     String?
+  read        Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  
+  recipientId String
+  actorId     String?
+  postId      String?
+  commentId   String?
+  
+  recipient   User      @relation("notifications", fields: [recipientId], references: [id], onDelete: Cascade)
+  actor       User?     @relation("notificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+  post        Post?     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  @@index([recipientId])
+  @@index([read])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  LIKE
+  COMMENT
+  FOLLOW
+  MENTION
+  SYSTEM
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  type        NotificationType
+  title       String
+  content     String?
+  read        Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  recipientId String
+  recipient   User             @relation("notifications", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  actorId     String?
+  actor       User?            @relation("actorNotifications", fields: [actorId], references: [id], onDelete: SetNull)
+
+  postId      String?
+  post        Post?            @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  commentId   String?
+
+  @@index([recipientId])
+  @@index([read])
+  @@index([createdAt])
+}
