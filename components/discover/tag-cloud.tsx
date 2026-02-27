@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { useRouter } from 'next/navigation'
 
 interface Tag {
   name: string
@@ -27,7 +28,12 @@ const mockTags: Tag[] = [
   { name: '探店', count: 1654, trend: 'up' },
 ]
 
-export function TagCloud() {
+interface TagCloudProps {
+  onTagClick?: (tag: string) => void
+}
+
+export function TagCloud({ onTagClick }: TagCloudProps = {}) {
+  const router = useRouter()
   const [hoveredTag, setHoveredTag] = useState<string | null>(null)
   const [tags, setTags] = useState<Tag[]>([])
 
@@ -87,6 +93,13 @@ export function TagCloud() {
             whileHover={{ scale: 1.1, zIndex: 10 }}
             onHoverStart={() => setHoveredTag(tag.name)}
             onHoverEnd={() => setHoveredTag(null)}
+            onClick={() => {
+              if (onTagClick) {
+                onTagClick(tag.name)
+              } else {
+                router.push(`/discover?tag=${encodeURIComponent(tag.name)}`)
+              }
+            }}
             className={`
               relative font-medium text-white rounded-full shadow-lg
               bg-gradient-to-r ${getTagColor(index)}
