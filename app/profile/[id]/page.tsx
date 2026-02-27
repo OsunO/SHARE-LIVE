@@ -7,6 +7,8 @@ import { InfiniteFeed } from '@/components/infinite-feed'
 import { Navbar } from '@/components/navbar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatDate } from '@/lib/utils'
+import { Camera, MapPin, Link as LinkIcon, Calendar } from 'lucide-react'
+import Link from 'next/link'
 
 interface ProfilePageProps {
   params: { id: string }
@@ -21,6 +23,9 @@ async function getUserProfile(userId: string, currentUserId?: string) {
       email: true,
       image: true,
       bio: true,
+      coverImage: true,
+      location: true,
+      website: true,
       createdAt: true,
       _count: {
         select: {
@@ -104,106 +109,185 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   const { posts, initialCursor } = await getUserPosts(params.id, currentUserId || '')
 
+  // 默认封面图
+  const defaultCover = 'https://images.unsplash.com/photo-1557683316-973673baf926?w=1200&h=400&fit=crop'
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <Navbar user={session?.user} />
       
-      <main className="container mx-auto max-w-4xl px-4 py-6">
-        {/* Profile Header */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-          <div className="flex items-start gap-6">
-            {/* Avatar */}
-            {user.image ? (
-              <img 
-                src={user.image} 
-                alt={user.name || 'User'}
-                className="w-24 h-24 rounded-full object-cover ring-4 ring-gray-50"
-              />
-            ) : (
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-3xl font-bold ring-4 ring-gray-50">
-                {user.name?.[0] || 'U'}
-              </div>
-            )}
-            
-            {/* User Info */}
-            <div className="flex-1">
-              <div className="flex items-center gap-4 mb-3">
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {user.name || '匿名用户'}
-                </h1>
-                
-                {!user.isSelf && currentUserId && (
-                  <FollowButton 
-                    userId={user.id}
-                    initialIsFollowing={user.isFollowing}
-                    size="sm"
-                  />
-                )}
-              </div>
-              
-              {user.bio && (
-                <p className="text-gray-600 mb-3 max-w-lg">{user.bio}</p>
-              )}
-              
-              {/* Stats */}
-              <div className="flex items-center gap-6 text-sm">
-                <div className="text-center">
-                  <span className="font-bold text-gray-900 text-lg">{user._count.posts}</span>
-                  <p className="text-gray-500"> posts</p>
-                </div>
-                <div className="text-center">
-                  <a href={`/profile/${user.id}/followers`} className="block hover:text-blue-500 transition-colors">
-                    <span className="font-bold text-gray-900 text-lg">{user._count.followers}</span>
-                    <p className="text-gray-500"> followers</p>
-                  </a>
-                </div>
-                <div className="text-center">
-                  <a href={`/profile/${user.id}/following`} className="block hover:text-blue-500 transition-colors">
-                    <span className="font-bold text-gray-900 text-lg">{user._count.following}</span>
-                    <p className="text-gray-500"> following</p>
-                  </a>
-                </div>
-              </div>
-              
-              <p className="text-xs text-gray-400 mt-3">
-                加入时间 {formatDate(user.createdAt)}
-              </p>
-            </div>
-          </div>
+      <main className="pb-8">
+        {/* Cover Image */}
+        <div className="relative h-64 md:h-80 overflow-hidden">
+          <img 
+            src={user.coverImage || defaultCover}
+            alt="Cover"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+          
+          {user.isSelf && (
+            <button className="absolute bottom-4 right-4 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-full text-sm font-medium text-gray-700 hover:bg-white transition-colors flex items-center gap-2">
+              <Camera className="w-4 h-4" />
+              更换封面
+            </button>
+          )}
         </div>
 
-        {/* Tabs Content */}
-        <Tabs defaultValue="posts" className="w-full">
-          <TabsList className="w-full bg-white border-b rounded-none justify-start mb-4">
-            <TabsTrigger value="posts" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent">
-              Posts
-            </TabsTrigger>
-            <TabsTrigger value="saved" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent">
-              Saved
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="posts">
-            {posts.length > 0 ? (
-              <InfiniteFeed 
-                initialPosts={posts}
-                initialCursor={initialCursor}
-                currentUserId={currentUserId || ''}
-              />
-            ) : (
-              <div className="text-center py-12 text-gray-500 bg-white rounded-lg">
-                <p className="text-lg mb-2">no posts yet</p>
-                {user.isSelf && <p className="text-sm">share your first post!</p>}
+        <div className="container mx-auto max-w-4xl px-4">
+          {/* Profile Info Card */}
+          <div className="relative -mt-20 mb-6">
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+              <div className="flex flex-col md:flex-row items-start md:items-end gap-6">
+                {/* Avatar */}
+                <div className="relative -mt-16 md:-mt-24">
+                  {user.image ? (
+                    <img 
+                      src={user.image} 
+                      alt={user.name || 'User'}
+                      className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover ring-4 ring-white shadow-lg"
+                    />
+                  ) : (
+                    <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white text-4xl font-bold ring-4 ring-white shadow-lg">
+                      {user.name?.[0] || 'U'}
+                    </div>
+                  )}
+                  
+                  {user.isSelf && (
+                    <button className="absolute bottom-2 right-2 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center text-gray-600 hover:text-gray-900">
+                      <Camera className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                
+                {/* User Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col md:flex-row md:items-center gap-4 mb-3">
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                      {user.name || '匿名用户'}
+                    </h1>
+                    
+                    {!user.isSelf && currentUserId && (
+                      <FollowButton 
+                        userId={user.id}
+                        initialIsFollowing={user.isFollowing}
+                        size="default"
+                      />
+                    )}
+                    
+                    {user.isSelf && (
+                      <Link href="/settings/profile">
+                        <button className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full text-sm font-medium text-gray-700 transition-colors">
+                          编辑资料
+                        </button>
+                      </Link>
+                    )}
+                  </div>
+                  
+                  {user.bio && (
+                    <p className="text-gray-600 mb-3 max-w-lg">{user.bio}</p>
+                  )}
+                  
+                  {/* Meta Info */}
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
+                    {user.location && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-4 h-4" />
+                        {user.location}
+                      </span>
+                    )}
+                    {user.website && (
+                      <a 
+                        href={user.website} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-purple-600 hover:underline"
+                      >
+                        <LinkIcon className="w-4 h-4" />
+                        {user.website.replace(/^https?:\/\//, '')}
+                      </a>
+                    )}
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      {formatDate(user.createdAt)} 加入
+                    </span>
+                  </div>
+                </div>
               </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="saved">
-            <div className="text-center py-12 text-gray-500 bg-white rounded-lg">
-              <p>saved feature coming soon</p>
+              
+              {/* Stats */}
+              <div className="flex items-center gap-8 mt-6 pt-6 border-t border-gray-100">
+                <div className="text-center">
+                  <span className="block text-xl font-bold text-gray-900">{user._count.posts}</span>
+                  <span className="text-sm text-gray-500">帖子</span>
+                </div>
+                <Link href={`/profile/${user.id}/followers`} className="text-center hover:bg-gray-50 px-4 py-2 rounded-lg transition-colors">
+                  <span className="block text-xl font-bold text-gray-900">{user._count.followers}</span>
+                  <span className="text-sm text-gray-500">粉丝</span>
+                </Link>
+                <Link href={`/profile/${user.id}/following`} className="text-center hover:bg-gray-50 px-4 py-2 rounded-lg transition-colors">
+                  <span className="block text-xl font-bold text-gray-900">{user._count.following}</span>
+                  <span className="text-sm text-gray-500">关注</span>
+                </Link>
+              </div>
             </div>
-          </TabsContent>
-        </Tabs>
+          </div>
+
+          {/* Tabs Content */}
+          <Tabs defaultValue="posts" className="w-full">
+            <TabsList className="w-full bg-white/80 backdrop-blur-sm border border-gray-200/50 rounded-xl p-1 mb-4">
+              <TabsTrigger 
+                value="posts" 
+                className="flex-1 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white"
+              >
+                帖子
+              </TabsTrigger>
+              <TabsTrigger 
+                value="saved"
+                className="flex-1 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white"
+              >
+                收藏
+              </TabsTrigger>
+              <TabsTrigger 
+                value="liked"
+                className="flex-1 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white"
+              >
+                赞过
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="posts">
+              {posts.length > 0 ? (
+                <InfiniteFeed 
+                  initialPosts={posts}
+                  initialCursor={initialCursor}
+                  currentUserId={currentUserId || ''}
+                />
+              ) : (
+                <div className="text-center py-12 text-gray-500 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50">
+                  <p className="text-lg mb-2">还没有发布任何内容</p>
+                  {user.isSelf && (
+                    <Link href="/post/new" className="text-purple-600 hover:underline">
+                      发布第一条动态 →
+                    </Link>
+                  )}
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="saved">
+              <div className="text-center py-12 text-gray-500 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50">
+                <p>收藏功能即将上线</p>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="liked">
+              <div className="text-center py-12 text-gray-500 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50">
+                <p>点赞记录功能即将上线</p>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
       </main>
     </div>
   )

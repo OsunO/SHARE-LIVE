@@ -42,7 +42,10 @@ model User {
   emailVerified DateTime?
   password      String?   // 用于邮箱+密码登录
   image         String?
+  coverImage    String?   // 封面图
   bio           String?   @db.Text
+  location      String?   // 位置
+  website       String?   // 个人网站
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -128,37 +131,6 @@ model Follow {
   following User @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@unique([followerId, followingId])
-}
-
-enum NotificationType {
-  LIKE
-  COMMENT
-  FOLLOW
-  MENTION
-  SYSTEM
-}
-
-model Notification {
-  id          String           @id @default(cuid())
-  type        NotificationType
-  title       String
-  content     String?
-  read        Boolean          @default(false)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  
-  recipientId String
-  actorId     String?
-  postId      String?
-  commentId   String?
-  
-  recipient   User      @relation("notifications", fields: [recipientId], references: [id], onDelete: Cascade)
-  actor       User?     @relation("notificationActor", fields: [actorId], references: [id], onDelete: SetNull)
-  post        Post?     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  
-  @@index([recipientId])
-  @@index([read])
-  @@index([createdAt])
 }
 
 enum NotificationType {
