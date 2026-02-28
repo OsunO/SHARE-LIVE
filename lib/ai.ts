@@ -7,13 +7,13 @@ function getOpenAIClient(): OpenAI | null {
   if (!openaiClient && process.env.OPENAI_API_KEY) {
     openaiClient = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
-      baseURL: process.env.OPENAI_BASE_URL || 'https://api.moonshot.cn/v1'
+      baseURL: process.env.OPENAI_BASE_URL || 'https://coding.dashscope.aliyuncs.com/v1'
     })
   }
   return openaiClient
 }
 
-const MODEL = process.env.OPENAI_MODEL || 'moonshot-v1-8k'
+const MODEL = process.env.OPENAI_MODEL || 'kimi-k2.5'
 
 export async function analyzeImage(base64Image: string) {
   const openai = getOpenAIClient()
