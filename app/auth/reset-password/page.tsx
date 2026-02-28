@@ -152,18 +152,3 @@ export default function ResetPasswordPage() {
     </Suspense>
   )
 }
-
-export default function ResetPasswordPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">加载中...</p>
-        </div>
-      </div>
-    }>
-      <ResetPasswordForm />
-    </Suspense>
-  )
-}
