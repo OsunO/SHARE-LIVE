@@ -1,75 +1,66 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
-export default function SignUpPage() {
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
+export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const token = searchParams.get('token')
 
-  const validateForm = () => {
-    if (password !== confirmPassword) {
-      setError('两次输入的密码不一致')
-      return false
+  useEffect(() => {
+    if (!token) {
+      setError('无效的重置链接')
     }
-
-    if (password.length < 6) {
-      setError('密码至少需要6个字符')
-      return false
-    }
-
-    if (name.length < 2) {
-      setError('昵称至少需要2个字符')
-      return false
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      setError('请输入有效的邮箱地址')
-      return false
-    }
-
-    return true
-  }
+  }, [token])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setSuccess('')
 
-    if (!validateForm()) return
+    if (!token) {
+      setError('无效的重置链接')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setError('两次输入的密码不一致')
+      return
+    }
+
+    if (password.length < 6) {
+      setError('密码至少需要6个字符')
+      return
+    }
 
     setLoading(true)
 
     try {
-      console.log('Sending signup request...')
-      const response = await fetch('/api/auth/signup', {
+      const response = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password })
+        body: JSON.stringify({ token, password })
       })
 
       const data = await response.json()
-      console.log('Signup response:', response.status, data)
 
       if (!response.ok) {
-        setError(data.error || `注册失败 (${response.status})`)
+        setError(data.error || '重置失败')
       } else {
-        setSuccess('注册成功！正在跳转到登录页面...')
+        setSuccess('密码重置成功！即将跳转到登录页面...')
         setTimeout(() => {
           router.push('/auth/signin')
-        }, 1500)
+        }, 2000)
       }
-    } catch (err: any) {
-      console.error('Signup error:', err)
-      setError('网络错误，请检查连接后重试')
+    } catch (err) {
+      setError('重置失败，请重试')
     } finally {
       setLoading(false)
     }
@@ -82,10 +73,10 @@ export default function SignUpPage() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
             SHARE LIVE
           </h1>
-          <p className="mt-2 text-gray-600">创建账号开始分享</p>
+          <p className="mt-2 text-gray-600">设置新密码</p>
         </div>
 
-        <form className="space-y-5" onSubmit={handleSubmit}>
+        <form className="space-y-6" onSubmit={handleSubmit}>
           {error && (
             <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
               {error}
@@ -99,46 +90,13 @@ export default function SignUpPage() {
           )}
 
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-              昵称
-            </label>
-            <input
-              id="name"
-              type="text"
-              required
-              minLength={2}
-              maxLength={20}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="2-20个字符"
-              className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              邮箱
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-            />
-          </div>
-
-          <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              密码
+              新密码
             </label>
             <input
               id="password"
               type="password"
               required
-              minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="至少6个字符"
@@ -148,7 +106,7 @@ export default function SignUpPage() {
 
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-              确认密码
+              确认新密码
             </label>
             <input
               id="confirmPassword"
@@ -156,24 +114,23 @@ export default function SignUpPage() {
               required
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="再次输入密码"
+              placeholder="再次输入新密码"
               className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
             />
           </div>
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !token}
             className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 transition-all"
           >
-            {loading ? '注册中...' : '创建账号'}
+            {loading ? '重置中...' : '重置密码'}
           </button>
         </form>
 
         <p className="text-center text-sm text-gray-600">
-          已有账号？{' '}
           <Link href="/auth/signin" className="text-purple-600 hover:underline">
-            立即登录
+            返回登录
           </Link>
         </p>
       </div>

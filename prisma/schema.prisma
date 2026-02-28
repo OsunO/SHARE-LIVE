@@ -36,18 +36,20 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  password      String?   // 用于邮箱+密码登录
-  image         String?
-  coverImage    String?   // 封面图
-  bio           String?   @db.Text
-  location      String?   // 位置
-  website       String?   // 个人网站
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  name             String?
+  email            String    @unique
+  emailVerified    DateTime?
+  password         String?   // 用于邮箱+密码登录
+  resetToken       String?   @unique // 密码重置令牌
+  resetTokenExpiry DateTime?        // 重置令牌过期时间
+  image            String?
+  coverImage       String?   // 封面图
+  bio              String?   @db.Text
+  location         String?   // 位置
+  website          String?   // 个人网站
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   accounts      Account[]
   sessions      Session[]
