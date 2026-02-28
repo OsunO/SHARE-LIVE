@@ -114,7 +114,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
-      <Navbar user={session?.user} />
+      <Navbar user={(session?.user as any)?.id ? session?.user as any : { id: '', name: null, email: null, image: null }} />
       
       <main className="pb-8">
         {/* Cover Image */}

@@ -70,7 +70,7 @@ export default function TagDetailPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
-      <Navbar user={session?.user || { id: '', name: null, email: null, image: null }} />
+      <Navbar user={session?.user ? { ...session.user, id: session.user.id || '' } : { id: '', name: null, email: null, image: null }} />
       
       {/* Hero Section */}
       <section className="relative pt-20 pb-8 px-4 overflow-hidden">

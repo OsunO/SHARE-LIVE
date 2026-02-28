@@ -57,6 +57,8 @@ model User {
   favorites     Favorite[]
   followers     Follow[] @relation("following")
   following     Follow[] @relation("followers")
+  notifications Notification[] @relation("notifications")
+  actorNotifications Notification[] @relation("actorNotifications")
 }
 
 model VerificationToken {
@@ -83,6 +85,7 @@ model Post {
   comments  Comment[]
   likes     Like[]
   favorites Favorite[]
+  notifications Notification[]
 }
 
 model Comment {

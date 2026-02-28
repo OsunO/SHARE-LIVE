@@ -95,7 +95,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
-      <Navbar user={session?.user || { id: '', name: null, email: null, image: null }} />
+      <Navbar user={(session?.user as any)?.id ? session?.user as any : { id: '', name: null, email: null, image: null }} />
       
       <main className="pt-20 pb-8 px-4">
         <div className="max-w-2xl mx-auto">

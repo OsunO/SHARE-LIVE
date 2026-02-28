@@ -1,5 +1,5 @@
-# 使用 Node.js 官方镜像
-FROM node:20-alpine AS base
+# 使用 Node.js 官方镜像 (通过国内镜像源)
+FROM hub.rat.dev/library/node:20-alpine AS base
 
 # 安装依赖
 FROM base AS deps
