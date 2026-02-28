@@ -171,7 +171,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                       <FollowButton 
                         userId={user.id}
                         initialIsFollowing={user.isFollowing}
-                        size="default"
+                        size="md"
                       />
                     )}
                     
