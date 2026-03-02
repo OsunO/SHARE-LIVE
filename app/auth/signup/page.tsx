@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { motion } from 'framer-motion'
+import { User, Mail, Lock, ArrowRight, Sparkles, CheckCircle } from 'lucide-react'
 
 export default function SignUpPage() {
   const [name, setName] = useState('')
@@ -49,7 +51,6 @@ export default function SignUpPage() {
     setLoading(true)
 
     try {
-      console.log('Sending signup request...')
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -57,7 +58,6 @@ export default function SignUpPage() {
       })
 
       const data = await response.json()
-      console.log('Signup response:', response.status, data)
 
       if (!response.ok) {
         setError(data.error || `注册失败 (${response.status})`)
@@ -68,7 +68,6 @@ export default function SignUpPage() {
         }, 1500)
       }
     } catch (err: any) {
-      console.error('Signup error:', err)
       setError('网络错误，请检查连接后重试')
     } finally {
       setLoading(false)
@@ -76,107 +75,154 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl border border-white/50">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-            SHARE LIVE
-          </h1>
-          <p className="mt-2 text-gray-600">创建账号开始分享</p>
-        </div>
-
-        <form className="space-y-5" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
-
-          {success && (
-            <div className="bg-green-50 text-green-600 p-3 rounded-lg text-sm">
-              {success}
-            </div>
-          )}
-
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-              昵称
-            </label>
-            <input
-              id="name"
-              type="text"
-              required
-              minLength={2}
-              maxLength={20}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="2-20个字符"
-              className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              邮箱
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              密码
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="至少6个字符"
-              className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-              确认密码
-            </label>
-            <input
-              id="confirmPassword"
-              type="password"
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="再次输入密码"
-              className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 transition-all"
-          >
-            {loading ? '注册中...' : '创建账号'}
-          </button>
-        </form>
-
-        <p className="text-center text-sm text-gray-600">
-          已有账号？{' '}
-          <Link href="/auth/signin" className="text-purple-600 hover:underline">
-            立即登录
-          </Link>
-        </p>
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-purple-600 via-pink-500 to-blue-600 flex items-center justify-center p-4">
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden">
+        <motion.div
+          animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-l from-pink-400/30 to-transparent rounded-full blur-3xl"
+        />
+        <motion.div
+          animate={{ scale: [1.2, 1, 1.2], rotate: [90, 0, 90] }}
+          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+          className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-r from-blue-400/30 to-transparent rounded-full blur-3xl"
+        />
       </div>
+
+      {/* Glass Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="relative w-full max-w-md"
+      >
+        <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl overflow-hidden">
+          {/* Header */}
+          <div className="px-8 pt-10 pb-6 text-center">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring" }}
+              className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-2xl bg-gradient-to-br from-pink-400 to-purple-400 shadow-lg"
+            >
+              <Sparkles className="w-8 h-8 text-white" />
+            </motion.div>
+            <h1 className="text-3xl font-bold text-white mb-2">创建账号</h1>
+            <p className="text-white/70">开始分享你的生活点滴</p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="px-8 pb-8 space-y-4">
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="bg-red-500/20 border border-red-500/30 text-red-100 px-4 py-3 rounded-xl text-sm backdrop-blur-sm"
+              >
+                {error}
+              </motion.div>
+            )}
+
+            {success && (
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="bg-green-500/20 border border-green-500/30 text-green-100 px-4 py-3 rounded-xl text-sm backdrop-blur-sm flex items-center gap-2"
+              >
+                <CheckCircle className="w-4 h-4" />
+                {success}
+              </motion.div>
+            )}
+
+            <div className="relative group">
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50 group-focus-within:text-white/80 transition-colors" />
+              <input
+                id="name"
+                type="text"
+                required
+                minLength={2}
+                maxLength={20}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="昵称 (2-20个字符)"
+                className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent transition-all backdrop-blur-sm"
+              />
+            </div>
+
+            <div className="relative group">
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50 group-focus-within:text-white/80 transition-colors" />
+              <input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="邮箱地址"
+                className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent transition-all backdrop-blur-sm"
+              />
+            </div>
+
+            <div className="relative group">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50 group-focus-within:text-white/80 transition-colors" />
+              <input
+                id="password"
+                type="password"
+                required
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="密码 (至少6个字符)"
+                className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent transition-all backdrop-blur-sm"
+              />
+            </div>
+
+            <div className="relative group">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50 group-focus-within:text-white/80 transition-colors" />
+              <input
+                id="confirmPassword"
+                type="password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="确认密码"
+                className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent transition-all backdrop-blur-sm"
+              />
+            </div>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              type="submit"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 py-4 px-6 bg-white text-purple-600 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-70 disabled:cursor-not-allowed mt-6"
+            >
+              {loading ? (
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="w-5 h-5 border-2 border-purple-600 border-t-transparent rounded-full"
+                />
+              ) : (
+                <>
+                  创建账号
+                  <ArrowRight className="w-5 h-5" />
+                </>
+              )}
+            </motion.button>
+          </form>
+
+          {/* Footer */}
+          <div className="px-8 py-6 bg-white/5 border-t border-white/10 text-center">
+            <p className="text-white/70">
+              已有账号？{' '}
+              <Link href="/auth/signin" className="text-white font-semibold hover:underline">
+                立即登录
+              </Link>
+            </p>
+          </div>
+        </div>
+      </motion.div>
     </div>
   )
 }
