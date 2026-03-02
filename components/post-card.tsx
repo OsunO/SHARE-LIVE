@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Heart, MessageCircle, Bookmark, Share2 } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
+import { LazyImage } from './lazy-image'
 
 interface Post {
   id: string
@@ -121,7 +122,7 @@ export function PostCard({ post, currentUserId, onLikeUpdate, onFavoriteUpdate }
         </div>
       )}
 
-      {/* Images - Pinterest Style Grid */}
+      {/* Images - Pinterest Style Grid with Lazy Loading */}
       {post.images.length > 0 && (
         <div className={`grid gap-1 ${
           post.images.length === 1 ? 'grid-cols-1' : 
@@ -131,18 +132,19 @@ export function PostCard({ post, currentUserId, onLikeUpdate, onFavoriteUpdate }
           {post.images.slice(0, 4).map((image, idx) => (
             <div 
               key={idx} 
-              className={`relative ${
+              className={`relative overflow-hidden ${
                 post.images.length === 1 ? 'aspect-[4/3]' : 'aspect-square'
               } ${idx === 0 && post.images.length > 2 ? 'row-span-2' : ''}`}
             >
-              <img 
-                src={image} 
+              <LazyImage
+                src={image}
                 alt={`图片 ${idx + 1}`}
-                className="w-full h-full object-cover"
-                loading="lazy"
+                aspectRatio={post.images.length === 1 ? 'landscape' : 'square'}
+                priority={idx === 0}
+                className="w-full h-full"
               />
               {idx === 3 && post.images.length > 4 && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm">
                   <span className="text-white text-2xl font-bold">+{post.images.length - 4}</span>
                 </div>
               )}
