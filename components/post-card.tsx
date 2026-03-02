@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Heart, MessageCircle, Bookmark, Share2 } from 'lucide-react'
+import { Heart, MessageCircle, Bookmark, Share2, MoreHorizontal } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import { LazyImage } from './lazy-image'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface Post {
   id: string
@@ -38,6 +39,7 @@ export function PostCard({ post, currentUserId, onLikeUpdate, onFavoriteUpdate }
   const [likeCount, setLikeCount] = useState(post._count.likes)
   const [isLikeLoading, setIsLikeLoading] = useState(false)
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false)
+  const [showShareMenu, setShowShareMenu] = useState(false)
 
   const handleLike = async () => {
     if (isLikeLoading) return
@@ -84,55 +86,73 @@ export function PostCard({ post, currentUserId, onLikeUpdate, onFavoriteUpdate }
     }
   }
 
+  const handleShare = () => {
+    setShowShareMenu(!showShareMenu)
+  }
+
   return (
-    <article className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+    <motion.article 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.3 }}
+      className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-white/50 overflow-hidden hover:shadow-lg transition-all duration-300"
+    >
       {/* Author Header */}
       <div className="p-4 flex items-center gap-3">
-        <Link href={`/profile/${post.author.id}`}>
+        <Link href={`/profile/${post.author.id}`} className="relative group">
           {post.author.image ? (
             <img 
               src={post.author.image} 
               alt={post.author.name || 'User'} 
-              className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100"
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover ring-2 ring-purple-100 group-hover:ring-purple-300 transition-all"
               loading="lazy"
             />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-medium">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 flex items-center justify-center text-white font-medium text-lg">
               {post.author.name?.[0] || 'U'}
             </div>
           )}
+          {/* Online indicator */}
+          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 border-2 border-white rounded-full" />
         </Link>
         <div className="flex-1 min-w-0">
           <Link 
             href={`/profile/${post.author.id}`} 
-            className="font-medium text-gray-900 hover:underline truncate block"
+            className="font-semibold text-gray-900 hover:text-purple-600 transition-colors truncate block"
           >
             {post.author.name || '匿名用户'}
           </Link>
-          <p className="text-sm text-gray-500">
+          <p className="text-xs sm:text-sm text-gray-500">
             {formatDate(post.createdAt)}
           </p>
         </div>
+        <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+          <MoreHorizontal className="w-5 h-5 text-gray-400" />
+        </button>
       </div>
 
       {/* Content */}
       {post.content && (
         <div className="px-4 pb-3">
-          <p className="whitespace-pre-wrap text-gray-800 leading-relaxed">{post.content}</p>
+          <p className="whitespace-pre-wrap text-gray-800 leading-relaxed text-sm sm:text-base">
+            {post.content}
+          </p>
         </div>
       )}
 
-      {/* Images - Pinterest Style Grid with Lazy Loading */}
+      {/* Images - Enhanced Grid with Lazy Loading */}
       {post.images.length > 0 && (
-        <div className={`grid gap-1 ${
+        <div className={`grid gap-1 sm:gap-2 px-4 pb-3 ${
           post.images.length === 1 ? 'grid-cols-1' : 
           post.images.length === 2 ? 'grid-cols-2' : 
           'grid-cols-2'
         }`}>
           {post.images.slice(0, 4).map((image, idx) => (
-            <div 
-              key={idx} 
-              className={`relative overflow-hidden ${
+            <motion.div 
+              key={idx}
+              whileHover={{ scale: 1.02 }}
+              className={`relative overflow-hidden rounded-lg cursor-pointer group ${
                 post.images.length === 1 ? 'aspect-[4/3]' : 'aspect-square'
               } ${idx === 0 && post.images.length > 2 ? 'row-span-2' : ''}`}
             >
@@ -141,61 +161,110 @@ export function PostCard({ post, currentUserId, onLikeUpdate, onFavoriteUpdate }
                 alt={`图片 ${idx + 1}`}
                 aspectRatio={post.images.length === 1 ? 'landscape' : 'square'}
                 priority={idx === 0}
-                className="w-full h-full"
+                className="w-full h-full transition-transform duration-500 group-hover:scale-110"
               />
+              {/* Hover overlay */}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+              
               {idx === 3 && post.images.length > 4 && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm">
-                  <span className="text-white text-2xl font-bold">+{post.images.length - 4}</span>
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                  <span className="text-white text-xl sm:text-2xl font-bold">+{post.images.length - 4}</span>
                 </div>
               )}
-            </div>
+            </motion.div>
           ))}
         </div>
       )}
 
       {/* Actions */}
-      <div className="p-4 flex items-center gap-6 border-t border-gray-50">
-        <button
-          onClick={handleLike}
-          disabled={isLikeLoading}
-          className={`flex items-center gap-2 transition-all ${
-            isLiked 
-              ? 'text-red-500 scale-105' 
-              : 'text-gray-600 hover:text-red-500 hover:scale-105'
-          }`}
-        >
-          <Heart 
-            className={`w-6 h-6 transition-all ${isLiked ? 'fill-current' : ''} ${isLikeLoading ? 'animate-pulse' : ''}`} 
-          />
-          <span className="font-medium">{likeCount}</span>
-        </button>
+      <div className="px-4 py-3 flex items-center justify-between border-t border-gray-100">
+        <div className="flex items-center gap-1 sm:gap-2">
+          {/* Like Button */}
+          <motion.button
+            onClick={handleLike}
+            disabled={isLikeLoading}
+            whileTap={{ scale: 0.9 }}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-full transition-all ${
+              isLiked 
+                ? 'text-red-500 bg-red-50' 
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={isLiked ? 'liked' : 'unliked'}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
+              >
+                <Heart 
+                  className={`w-5 h-5 sm:w-6 sm:h-6 transition-all ${isLiked ? 'fill-current' : ''} ${isLikeLoading ? 'animate-pulse' : ''}`} 
+                />
+              </motion.div>
+            </AnimatePresence>
+            <span className="font-semibold text-sm sm:text-base min-w-[1rem]">{likeCount > 0 ? likeCount : ''}</span>
+          </motion.button>
 
-        <Link 
-          href={`/post/${post.id}`}
-          className="flex items-center gap-2 text-gray-600 hover:text-blue-500 transition-colors"
-        >
-          <MessageCircle className="w-6 h-6" />
-          <span className="font-medium">{post._count.comments}</span>
-        </Link>
+          {/* Comment Button */}
+          <Link 
+            href={`/post/${post.id}`}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-full text-gray-600 hover:bg-blue-50 hover:text-blue-500 transition-all"
+          >
+            <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6" />
+            <span className="font-semibold text-sm sm:text-base min-w-[1rem]">{post._count.comments > 0 ? post._count.comments : ''}</span>
+          </Link>
 
-        <button
-          onClick={handleFavorite}
-          disabled={isFavoriteLoading}
-          className={`flex items-center gap-2 transition-all ${
-            isFavorited 
-              ? 'text-yellow-500 scale-105' 
-              : 'text-gray-600 hover:text-yellow-500 hover:scale-105'
-          }`}
-        >
-          <Bookmark 
-            className={`w-6 h-6 transition-all ${isFavorited ? 'fill-current' : ''} ${isFavoriteLoading ? 'animate-pulse' : ''}`}
-          />
-        </button>
+          {/* Favorite Button */}
+          <motion.button
+            onClick={handleFavorite}
+            disabled={isFavoriteLoading}
+            whileTap={{ scale: 0.9 }}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-full transition-all ${
+              isFavorited 
+                ? 'text-yellow-500 bg-yellow-50' 
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Bookmark 
+              className={`w-5 h-5 sm:w-6 sm:h-6 transition-all ${isFavorited ? 'fill-current' : ''} ${isFavoriteLoading ? 'animate-pulse' : ''}`}
+            />
+          </motion.button>
+        </div>
 
-        <button className="flex items-center gap-2 text-gray-600 hover:text-green-500 transition-colors ml-auto">
-          <Share2 className="w-6 h-6" />
-        </button>
+        {/* Share Button */}
+        <div className="relative">
+          <motion.button
+            onClick={handleShare}
+            whileTap={{ scale: 0.9 }}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-full text-gray-600 hover:bg-green-50 hover:text-green-500 transition-all"
+          >
+            <Share2 className="w-5 h-5 sm:w-6 sm:h-6" />
+          </motion.button>
+          
+          {/* Share Menu */}
+          <AnimatePresence>
+            {showShareMenu && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                className="absolute right-0 bottom-full mb-2 bg-white rounded-xl shadow-lg border border-gray-100 py-2 min-w-[140px] z-10"
+              >
+                <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                  复制链接
+                </button>
+                <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                  分享到微信
+                </button>
+                <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                  分享到微博
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
-    </article>
+    </motion.article>
   )
 }
