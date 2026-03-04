@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, TrendingUp, MapPin, Clock, Flame } from 'lucide-react'
+import { Search, TrendingUp, MapPin, Clock, Flame, ArrowRight } from 'lucide-react'
 import { TagCloud } from '@/components/discover/tag-cloud'
 import { Navbar } from '@/components/navbar'
 import { useSession } from 'next-auth/react'
-import { redirect } from 'next/navigation'
+import { redirect, useRouter } from 'next/navigation'
 
 interface Post {
   id: string
@@ -32,6 +32,7 @@ const filters = [
 ]
 
 export default function DiscoverPage() {
+  const router = useRouter()
   const { data: session, status } = useSession()
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState('trending')
@@ -65,16 +66,8 @@ export default function DiscoverPage() {
     e.preventDefault()
     if (!searchQuery.trim()) return
     
-    setIsLoading(true)
-    try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`)
-      const data = await res.json()
-      setPosts(data.posts || [])
-    } catch (error) {
-      console.error('Search failed:', error)
-    } finally {
-      setIsLoading(false)
-    }
+    // Navigate to advanced search page
+    router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
   }
 
   if (status === 'loading') {
@@ -115,7 +108,7 @@ export default function DiscoverPage() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 }}
             onSubmit={handleSearch}
-            className="max-w-2xl mx-auto mb-12"
+            className="max-w-2xl mx-auto mb-6"
           >
             <div className="relative group">
               <input
@@ -134,6 +127,22 @@ export default function DiscoverPage() {
               </button>
             </div>
           </motion.form>
+
+          {/* Advanced Search Link */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="text-center mb-12"
+          >
+            <button
+              onClick={() => router.push('/search')}
+              className="inline-flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors"
+            >
+              使用高级搜索
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </motion.div>
 
           {/* Tag Cloud */}
           <TagCloud />
