@@ -1,7 +1,9 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { prisma, Prisma } from '@/lib/prisma'
 
 export async function GET(req: NextRequest) {
   try {
@@ -57,64 +59,104 @@ export async function GET(req: NextRequest) {
 
     // Search posts
     if (type === 'all' || type === 'posts') {
-      // Build where clause
-      const whereClause: any = {
-        published: true,
-        OR: [
-          { content: { contains: searchTerm, mode: 'insensitive' } },
-          { tags: { hasSome: [searchTerm] } },
-          { aiTags: { hasSome: [searchTerm] } }
-        ]
-      }
+      // Build base where conditions for Prisma query
+      const whereConditions: string[] = ['published = true']
+      
+      // Content search (case insensitive)
+      whereConditions.push(`(
+        LOWER(content) LIKE LOWER('%${searchTerm.replace(/'/g, "''")}%')
+        OR EXISTS (
+          SELECT 1 FROM unnest(tags) t 
+          WHERE LOWER(t) LIKE LOWER('%${searchTerm.replace(/'/g, "''")}%')
+        )
+        OR EXISTS (
+          SELECT 1 FROM unnest("aiTags") t 
+          WHERE LOWER(t) LIKE LOWER('%${searchTerm.replace(/'/g, "''")}%')
+        )
+      )`)
 
       // Add date filter
       if (Object.keys(dateFilter).length > 0) {
-        whereClause.createdAt = dateFilter
+        if (dateFilter.gte) {
+          whereConditions.push(`"createdAt" >= '${dateFilter.gte.toISOString()}'`)
+        }
+        if (dateFilter.lte) {
+          whereConditions.push(`"createdAt" <= '${dateFilter.lte.toISOString()}'`)
+        }
       }
 
-      // Add tags filter
+      // Add tags filter (must have all selected tags)
       if (selectedTags.length > 0) {
-        whereClause.tags = { hasEvery: selectedTags }
+        const tagChecks = selectedTags.map(tag => 
+          `EXISTS (SELECT 1 FROM unnest(tags) t WHERE LOWER(t) = LOWER('${tag.replace(/'/g, "''")}'))`
+        ).join(' AND ')
+        whereConditions.push(`(${tagChecks})`)
       }
 
       // Add media type filter
       if (mediaType === 'image') {
-        whereClause.images = { isEmpty: false }
+        whereConditions.push(`array_length(images, 1) > 0`)
       } else if (mediaType === 'video') {
-        whereClause.videos = { isEmpty: false }
+        whereConditions.push(`array_length(videos, 1) > 0`)
       }
 
       // Build order by
-      let orderBy: any = {}
+      let orderByClause = ''
       switch (sortBy) {
         case 'time':
-          orderBy = { createdAt: 'desc' }
+          orderByClause = '"createdAt" DESC'
           break
         case 'popularity':
-          orderBy = { likes: { _count: 'desc' } }
+          orderByClause = '(SELECT COUNT(*) FROM "Like" WHERE "postId" = p.id) DESC'
           break
         default:
-          // For relevance, we'll use createdAt as fallback
-          orderBy = { createdAt: 'desc' }
+          // For relevance: prioritize exact matches in aiTags, then partial matches
+          orderByClause = `
+            CASE 
+              WHEN EXISTS (SELECT 1 FROM unnest("aiTags") t WHERE LOWER(t) = LOWER('${searchTerm.replace(/'/g, "''")}')) THEN 3
+              WHEN EXISTS (SELECT 1 FROM unnest(tags) t WHERE LOWER(t) = LOWER('${searchTerm.replace(/'/g, "''")}')) THEN 2
+              WHEN LOWER(content) LIKE LOWER('%${searchTerm.replace(/'/g, "''")}%') THEN 1
+              ELSE 0
+            END DESC,
+            "createdAt" DESC
+          `
       }
 
-      const posts = await prisma.post.findMany({
-        where: whereClause,
-        include: {
-          author: {
-            select: { id: true, name: true, image: true }
-          },
-          _count: {
-            select: { likes: true, comments: true, favorites: true }
-          }
-        },
-        orderBy,
-        take: 20
-      })
+      // Execute raw query for complex filtering
+      const whereClause = whereConditions.join(' AND ')
+      const postsRaw = await prisma.$queryRaw`
+        SELECT 
+          p.id,
+          p.content,
+          p.images,
+          p.videos,
+          p.tags,
+          p."aiTags",
+          p."aiDescription",
+          p."createdAt",
+          p."updatedAt",
+          p."authorId",
+          json_build_object(
+            'id', u.id,
+            'name', u.name,
+            'image', u.image
+          ) as author,
+          json_build_object(
+            'likes', (SELECT COUNT(*) FROM "Like" WHERE "postId" = p.id),
+            'comments', (SELECT COUNT(*) FROM "Comment" WHERE "postId" = p.id),
+            'favorites', (SELECT COUNT(*) FROM "Favorite" WHERE "postId" = p.id)
+          ) as _count
+        FROM "Post" p
+        JOIN "User" u ON p."authorId" = u.id
+        WHERE ${Prisma.raw(whereClause)}
+        ORDER BY ${Prisma.raw(orderByClause)}
+        LIMIT 20
+      `
 
-      results.posts = posts.map(post => ({
+      results.posts = (postsRaw as any[]).map(post => ({
         ...post,
-        createdAt: post.createdAt.toISOString()
+        createdAt: new Date(post.createdAt).toISOString(),
+        updatedAt: new Date(post.updatedAt).toISOString()
       }))
     }
 
@@ -146,10 +188,10 @@ export async function GET(req: NextRequest) {
       results.users = users
     }
 
-    // Search tags
+    // Search tags (include both user tags and AI tags)
     if (type === 'all' || type === 'tags') {
-      // Get tags matching search term
-      const tagResults = await prisma.$queryRaw`
+      // Get user tags matching search term
+      const userTagResults = await prisma.$queryRaw`
         SELECT DISTINCT unnest(tags) as tag, COUNT(*) as count
         FROM "Post"
         WHERE published = true
@@ -158,14 +200,48 @@ export async function GET(req: NextRequest) {
           WHERE LOWER(t) LIKE LOWER(${`%${searchTerm}%`})
         )
         ${Object.keys(dateFilter).length > 0 && dateFilter.gte 
-          ? `AND "createdAt" >= '${dateFilter.gte.toISOString()}'` 
-          : ''}
+          ? Prisma.raw(`AND "createdAt" >= '${dateFilter.gte.toISOString()}'`) 
+          : Prisma.raw('')}
         GROUP BY unnest(tags)
         ORDER BY count DESC
         LIMIT 20
       `
 
-      results.tags = tagResults
+      // Get AI tags matching search term
+      const aiTagResults = await prisma.$queryRaw`
+        SELECT DISTINCT unnest("aiTags") as tag, COUNT(*) as count
+        FROM "Post"
+        WHERE published = true
+        AND EXISTS (
+          SELECT 1 FROM unnest("aiTags") t
+          WHERE LOWER(t) LIKE LOWER(${`%${searchTerm}%`})
+        )
+        ${Object.keys(dateFilter).length > 0 && dateFilter.gte 
+          ? Prisma.raw(`AND "createdAt" >= '${dateFilter.gte.toISOString()}'`) 
+          : Prisma.raw('')}
+        GROUP BY unnest("aiTags")
+        ORDER BY count DESC
+        LIMIT 20
+      `
+
+      // Merge and deduplicate tags
+      const tagMap = new Map<string, number>()
+      
+      ;(userTagResults as any[]).forEach((item: any) => {
+        const tag = item.tag.toLowerCase()
+        tagMap.set(tag, (tagMap.get(tag) || 0) + parseInt(item.count))
+      })
+      
+      ;(aiTagResults as any[]).forEach((item: any) => {
+        const tag = item.tag.toLowerCase()
+        tagMap.set(tag, (tagMap.get(tag) || 0) + parseInt(item.count))
+      })
+
+      // Convert back to array and sort by count
+      results.tags = Array.from(tagMap.entries())
+        .map(([tag, count]) => ({ tag, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 20)
     }
 
     return NextResponse.json(results)

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { InfiniteFeed } from '@/components/infinite-feed'
 import { Navbar } from '@/components/navbar'
+import { StoriesBar } from '@/components/stories/StoriesBar'
 import { Sparkles, TrendingUp, Users, Plus } from 'lucide-react'
 
 const POSTS_PER_PAGE = 10
@@ -50,6 +51,9 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <Navbar user={session.user} />
+      
+      {/* Stories Bar */}
+      <StoriesBar />
       
       {/* Hero Section */}
       <section className="relative overflow-hidden pt-6 pb-8 px-4 sm:pt-8 sm:pb-12">

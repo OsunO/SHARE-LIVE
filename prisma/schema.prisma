@@ -61,6 +61,8 @@ model User {
   following     Follow[] @relation("followers")
   notifications Notification[] @relation("notifications")
   actorNotifications Notification[] @relation("actorNotifications")
+  stories       Story[]
+  storyViews    StoryView[]
 }
 
 model VerificationToken {
@@ -169,4 +171,37 @@ model Notification {
   @@index([recipientId])
   @@index([read])
   @@index([createdAt])
+}
+
+// Story / 24小时动态模型
+model Story {
+  id          String   @id @default(cuid())
+  mediaUrl    String   // 图片或视频URL
+  mediaType   String   // IMAGE | VIDEO
+  caption     String?  // 可选文字说明
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime // 24小时后过期
+  authorId    String
+
+  author      User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  views       StoryView[]
+
+  @@index([authorId])
+  @@index([expiresAt])
+  @@index([createdAt])
+}
+
+// 故事观看记录
+model StoryView {
+  id        String   @id @default(cuid())
+  storyId   String
+  viewerId  String
+  viewedAt  DateTime @default(now())
+
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  viewer    User     @relation(fields: [viewerId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, viewerId]) // 每人每个故事只记录一次
+  @@index([storyId])
+  @@index([viewerId])
 }
