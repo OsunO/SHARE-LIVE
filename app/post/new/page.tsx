@@ -2,11 +2,18 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ImagePlus, X, Sparkles, Send, Loader2 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { 
+  ImagePlus, X, Sparkles, Send, Loader2, ArrowLeft, 
+  Type, Hash, Smile, MapPin, Clock, CheckCircle2 
+} from 'lucide-react'
 import { toast } from 'sonner'
 
 const MAX_CONTENT_LENGTH = 2000
 const MAX_IMAGES = 9
+
+// Emoji suggestions
+const EMOJI_SUGGESTIONS = ['😊', '😂', '❤️', '👍', '🎉', '🔥', '✨', '📸', '🌟', '💫']
 
 export default function NewPostPage() {
   const [content, setContent] = useState('')
@@ -17,6 +24,8 @@ export default function NewPostPage() {
   const [aiDescription, setAiDescription] = useState('')
   const [publishing, setPublishing] = useState(false)
   const [dragActive, setDragActive] = useState(false)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
@@ -34,13 +43,11 @@ export default function NewPostPage() {
 
     try {
       for (const file of filesToUpload) {
-        // 验证文件类型
         if (!file.type.startsWith('image/')) {
           toast.error(`${file.name} 不是图片文件`)
           continue
         }
         
-        // 验证文件大小 (10MB)
         if (file.size > 10 * 1024 * 1024) {
           toast.error(`${file.name} 超过 10MB 限制`)
           continue
@@ -59,7 +66,6 @@ export default function NewPostPage() {
           setImages(prev => [...prev, data.url])
           toast.success('图片上传成功')
           
-          // AI 分析第一张图片
           if (images.length === 0 && data.base64) {
             analyzeWithAI(data.base64)
           }
@@ -75,7 +81,6 @@ export default function NewPostPage() {
     }
   }, [images.length])
 
-  // 拖拽上传处理
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -120,6 +125,19 @@ export default function NewPostPage() {
     setImages(prev => prev.filter((_, i) => i !== index))
   }
 
+  const addEmoji = (emoji: string) => {
+    setContent(prev => prev + emoji)
+    setShowEmojiPicker(false)
+  }
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    )
+  }
+
   const handlePublish = async () => {
     if (!content.trim() && images.length === 0) {
       toast.error('请填写内容或上传图片')
@@ -142,7 +160,8 @@ export default function NewPostPage() {
           content: content.trim(),
           images,
           aiTags,
-          aiDescription
+          aiDescription,
+          tags: selectedTags
         })
       })
 
@@ -162,137 +181,328 @@ export default function NewPostPage() {
     }
   }
 
+  const progress = Math.min((content.length / MAX_CONTENT_LENGTH) * 100, 100)
+  const isNearLimit = content.length > MAX_CONTENT_LENGTH * 0.9
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="sticky top-0 bg-white border-b z-50">
-        <div className="container mx-auto max-w-2xl px-4 h-14 flex items-center justify-between">
-          <button onClick={() => router.back()} className="text-gray-600">
-            取消
-          </button>
-          <h1 className="font-semibold">发布动态</h1>
-          <button
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+      {/* Header */}
+      <motion.header 
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/50"
+      >
+        <div className="container mx-auto max-w-2xl px-4 h-16 flex items-center justify-between">
+          <motion.button 
+            onClick={() => router.back()} 
+            whileHover={{ x: -4 }}
+            whileTap={{ scale: 0.95 }}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="hidden sm:inline">返回</span>
+          </motion.button>
+          
+          <motion.h1 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="font-bold text-lg bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent"
+          >
+            发布动态
+          </motion.h1>
+          
+          <motion.button
             onClick={handlePublish}
             disabled={publishing || (!content.trim() && images.length === 0)}
-            className="flex items-center gap-1.5 bg-primary-600 text-white px-4 py-1.5 rounded-full text-sm font-medium disabled:opacity-50 hover:bg-primary-700 transition-colors"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-5 py-2 rounded-full text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/25 hover:shadow-xl transition-all"
           >
             {publishing ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                发布中
+                <span className="hidden sm:inline">发布中</span>
               </>
             ) : (
               <>
                 <Send className="w-4 h-4" />
-                发布
+                <span className="hidden sm:inline">发布</span>
               </>
             )}
-          </button>
+          </motion.button>
         </div>
-      </header>
+      </motion.header>
 
       <main className="container mx-auto max-w-2xl px-4 py-6">
-        <div className="relative">
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="分享你的生活点滴..."
-            maxLength={MAX_CONTENT_LENGTH}
-            className="w-full h-40 p-4 bg-white rounded-lg border resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-          <div className="absolute bottom-2 right-2 text-xs text-gray-400">
-            {content.length}/{MAX_CONTENT_LENGTH}
-          </div>
-        </div>
-
-        {/* AI 分析结果 */}
-        {aiAnalyzing && (
-          <div className="flex items-center gap-2 text-primary-600 mt-4">
-            <Sparkles className="w-4 h-4 animate-pulse" />
-            <span className="text-sm">AI 正在分析图片...</span>
-          </div>
-        )}
-
-        {aiTags.length > 0 && (
-          <div className="mt-4">
-            <p className="text-sm text-gray-600 mb-2">
-              <Sparkles className="w-4 h-4 inline mr-1" />
-              AI 识别标签：
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {aiTags.map((tag, idx) => (
-                <span 
-                  key={idx}
-                  className="px-3 py-1 bg-primary-50 text-primary-600 rounded-full text-sm"
-                >
-                  {tag}
-                </span>
-              ))}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          {/* Content Input */}
+          <div className="relative bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="分享你的生活点滴..."
+              maxLength={MAX_CONTENT_LENGTH}
+              className="w-full h-48 p-5 resize-none focus:outline-none text-gray-700 placeholder-gray-400 leading-relaxed"
+            />
+            
+            {/* Progress bar */}
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-100">
+              <motion.div 
+                className={`h-full transition-colors ${isNearLimit ? 'bg-red-500' : 'bg-gradient-to-r from-purple-500 to-pink-500'}`}
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+              />
+            </div>
+            
+            {/* Character count */}
+            <div className={`absolute bottom-3 right-4 text-xs font-medium transition-colors ${isNearLimit ? 'text-red-500' : 'text-gray-400'}`}>
+              {content.length}/{MAX_CONTENT_LENGTH}
             </div>
           </div>
-        )}
 
-        {/* 图片预览 */}
-        {images.length > 0 && (
-          <div className="grid grid-cols-3 gap-2 mt-4">
-            {images.map((image, index) => (
-              <div key={index} className="relative aspect-square">
-                <img
-                  src={image}
-                  alt={`Upload ${index + 1}`}
-                  className="w-full h-full object-cover rounded-lg"
-                />
-                <button
-                  onClick={() => removeImage(index)}
-                  className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
+          {/* Toolbar */}
+          <div className="flex items-center gap-2 mt-4">
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              className={`p-2.5 rounded-xl transition-colors ${showEmojiPicker ? 'bg-purple-100 text-purple-600' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
+            >
+              <Smile className="w-5 h-5" />
+            </motion.button>
+            
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => fileInputRef.current?.click()}
+              disabled={images.length >= MAX_IMAGES}
+              className="p-2.5 bg-white text-gray-600 hover:bg-gray-100 rounded-xl transition-colors disabled:opacity-50"
+            >
+              <ImagePlus className="w-5 h-5" />
+            </motion.button>
+            
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="p-2.5 bg-white text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+            >
+              <MapPin className="w-5 h-5" />
+            </motion.button>
+            
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="p-2.5 bg-white text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+            >
+              <Clock className="w-5 h-5" />
+            </motion.button>
           </div>
-        )}
 
-        {/* 上传区域 */}
-        {images.length < MAX_IMAGES && (
-          <div
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-            className={`mt-4 flex flex-col items-center justify-center px-4 py-8 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-              dragActive
-                ? 'border-primary-500 bg-primary-50'
-                : 'border-gray-300 hover:border-primary-500 hover:bg-gray-50'
-            }`}
-          >
-            {uploading ? (
-              <>
-                <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
-                <span className="mt-2 text-sm text-gray-600">上传中...</span>
-              </>
-            ) : (
-              <>
-                <ImagePlus className="w-8 h-8 text-gray-400" />
-                <span className="mt-2 text-sm text-gray-600">
-                  点击或拖拽上传图片
-                </span>
-                <span className="text-xs text-gray-400 mt-1">
-                  支持 JPG、PNG、GIF，最多 {MAX_IMAGES} 张，单张不超过 10MB
-                </span>
-              </>
+          {/* Emoji Picker */}
+          <AnimatePresence>
+            {showEmojiPicker && (
+              <motion.div
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                className="mt-3 p-3 bg-white rounded-xl shadow-lg border border-gray-100 flex flex-wrap gap-2"
+              >
+                {EMOJI_SUGGESTIONS.map((emoji, index) => (
+                  <motion.button
+                    key={emoji}
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.03 }}
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => addEmoji(emoji)}
+                    className="text-2xl p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    {emoji}
+                  </motion.button>
+                ))}
+              </motion.div>
             )}
-          </div>
-        )}
+          </AnimatePresence>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={(e) => handleImageUpload(e.target.files)}
-          className="hidden"
-        />
+          {/* AI 分析结果 */}
+          <AnimatePresence>
+            {aiAnalyzing && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="flex items-center gap-3 text-purple-600 mt-4 p-4 bg-purple-50 rounded-xl overflow-hidden"
+              >
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                >
+                  <Sparkles className="w-5 h-5" />
+                </motion.div>
+                <span className="text-sm font-medium">AI 正在分析图片内容...</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {aiTags.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100"
+            >
+              <p className="text-sm text-purple-700 mb-3 flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                <span className="font-medium">AI 识别标签：</span>
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {aiTags.map((tag, idx) => (
+                  <motion.button
+                    key={idx}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: idx * 0.05 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => toggleTag(tag)}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                      selectedTags.includes(tag)
+                        ? 'bg-purple-500 text-white shadow-md'
+                        : 'bg-white text-purple-600 hover:bg-purple-100'
+                    }`}
+                  >
+                    {selectedTags.includes(tag) && <CheckCircle2 className="w-3 h-3 inline mr-1" />}
+                    #{tag}
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* 图片预览 */}
+          <AnimatePresence>
+            {images.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="grid grid-cols-3 gap-3 mt-4"
+              >
+                {images.map((image, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="relative aspect-square group"
+                  >
+                    <img
+                      src={image}
+                      alt={`Upload ${index + 1}`}
+                      className="w-full h-full object-cover rounded-xl"
+                    />
+                    <motion.button
+                      initial={{ opacity: 0 }}
+                      whileHover={{ scale: 1.1 }}
+                      onClick={() => removeImage(index)}
+                      className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-4 h-4" />
+                    </motion.button>
+                    {index === 0 && (
+                      <div className="absolute bottom-2 left-2 px-2 py-1 bg-purple-500 text-white text-xs rounded-full">
+                        封面
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* 上传区域 */}
+          <AnimatePresence>
+            {images.length < MAX_IMAGES && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+              >
+                <div
+                  onDragEnter={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDragOver={handleDrag}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`
+                    mt-4 flex flex-col items-center justify-center px-4 py-10 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-300
+                    ${dragActive
+                      ? 'border-purple-500 bg-purple-50 scale-[1.02]'
+                      : 'border-gray-300 hover:border-purple-400 hover:bg-gray-50'
+                    }
+                  `}
+                >
+                  <AnimatePresence mode="wait">
+                    {uploading ? (
+                      <motion.div
+                        key="uploading"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="flex flex-col items-center"
+                      >
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        >
+                          <Loader2 className="w-10 h-10 text-purple-500" />
+                        </motion.div>
+                        <span className="mt-3 text-sm text-gray-600">上传中...</span>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="idle"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="flex flex-col items-center"
+                      >
+                        <motion.div
+                          animate={{ y: [0, -5, 0] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                        >
+                          <ImagePlus className="w-12 h-12 text-gray-400" />
+                        </motion.div>
+                        <span className="mt-3 text-sm font-medium text-gray-600">
+                          点击或拖拽上传图片
+                        </span>
+                        <span className="text-xs text-gray-400 mt-1">
+                          支持 JPG、PNG、GIF，最多 {MAX_IMAGES} 张，单张不超过 10MB
+                        </span>
+                        <span className="text-xs text-purple-500 mt-2">
+                          已上传 {images.length}/{MAX_IMAGES} 张
+                        </span>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={(e) => handleImageUpload(e.target.files)}
+            className="hidden"
+          />
+        </motion.div>
       </main>
     </div>
   )

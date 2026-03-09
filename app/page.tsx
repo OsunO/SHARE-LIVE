@@ -5,9 +5,33 @@ import { prisma } from '@/lib/prisma'
 import { InfiniteFeed } from '@/components/infinite-feed'
 import { Navbar } from '@/components/navbar'
 import { StoriesBar } from '@/components/stories/StoriesBar'
-import { Sparkles, TrendingUp, Users, Plus } from 'lucide-react'
+import { Sparkles, TrendingUp, Users, Plus, Compass } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 const POSTS_PER_PAGE = 10
+
+// Get greeting based on time
+function getGreeting(): string {
+  const hour = new Date().getHours()
+  if (hour < 6) return '夜深了'
+  if (hour < 9) return '早上好'
+  if (hour < 12) return '上午好'
+  if (hour < 14) return '中午好'
+  if (hour < 18) return '下午好'
+  return '晚上好'
+}
+
+// Get random tagline
+function getTagline(): string {
+  const taglines = [
+    '分享你的生活，连接有趣的人',
+    '记录美好瞬间，留住珍贵回忆',
+    '发现精彩，从这里开始',
+    '每一个瞬间都值得被分享',
+    '与世界分享你的故事',
+  ]
+  return taglines[Math.floor(Math.random() * taglines.length)]
+}
 
 export default async function Home() {
   const session = await getServerSession(authOptions)
@@ -48,52 +72,55 @@ export default async function Home() {
     createdAt: post.createdAt.toISOString()
   }))
 
+  const greeting = getGreeting()
+  const tagline = getTagline()
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <Navbar user={session.user} />
       
       {/* Stories Bar */}
-      <StoriesBar />
+      <div className="pt-16">
+        <StoriesBar />
+      </div>
       
       {/* Hero Section */}
       <section className="relative overflow-hidden pt-6 pb-8 px-4 sm:pt-8 sm:pb-12">
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-pink-500/5 to-blue-500/5" />
+        {/* Background decoration */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-20 -right-20 w-64 h-64 bg-purple-200/30 rounded-full blur-3xl" />
+          <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-pink-200/30 rounded-full blur-3xl" />
+        </div>
         
         <div className="relative max-w-2xl mx-auto">
           <div className="text-center animate-fade-in">
-            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent mb-2">
-              发现精彩瞬间
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2">
+              <span className="text-gray-800">{greeting}，</span>
+              <span className="gradient-text">{session.user.name || '朋友'}</span>
+              <span className="inline-block animate-bounce-soft ml-1">👋</span>
             </h1>
-            <p className="text-gray-600 text-sm sm:text-base">
-              分享你的生活，连接有趣的人
+            <p className="text-gray-600 text-sm sm:text-base animate-slide-up">
+              {tagline}
             </p>
           </div>
 
-          {/* Quick Stats */}
-          <div className="flex justify-center gap-4 sm:gap-8 mt-6 animate-slide-up">
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-              <Sparkles className="w-4 h-4 text-purple-500" />
-              <span className="text-sm font-medium text-gray-700">新鲜事</span>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-              <TrendingUp className="w-4 h-4 text-pink-500" />
-              <span className="text-sm font-medium text-gray-700">热门</span>
-            </div>
-            <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-              <Users className="w-4 h-4 text-blue-500" />
-              <span className="text-sm font-medium text-gray-700">关注</span>
-            </div>
+          {/* Quick Stats / Filters */}
+          <div className="flex justify-center gap-3 sm:gap-4 mt-6 animate-slide-up">
+            <QuickFilter icon={Sparkles} label="新鲜事" color="purple" active />
+            <QuickFilter icon={TrendingUp} label="热门" color="pink" />
+            <QuickFilter icon={Users} label="关注" color="blue" />
+            <QuickFilter icon={Compass} label="发现" color="indigo" href="/discover" />
           </div>
         </div>
       </section>
 
       {/* Main Content */}
-      <main className="container mx-auto max-w-2xl px-3 sm:px-4 pb-20">
+      <main className="container mx-auto max-w-2xl px-3 sm:px-4 pb-24">
         {/* New Post Button - Mobile */}
         <div className="sm:hidden mb-4 animate-scale-in">
           <a
             href="/post/new"
-            className="flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-medium shadow-lg shadow-purple-500/25 active:scale-95 transition-transform"
+            className="flex items-center justify-center gap-2 w-full py-3.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl font-medium shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 active:scale-[0.98] transition-all duration-200"
           >
             <Plus className="w-5 h-5" />
             发布新动态
@@ -108,13 +135,72 @@ export default async function Home() {
         />
       </main>
 
-      {/* Floating Action Button - Mobile */}
-      <a
+      {/* Floating Action Button - Desktop */}
+      <motion.a
         href="/post/new"
-        className="sm:hidden fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full shadow-lg shadow-purple-500/30 flex items-center justify-center z-40 hover:scale-110 active:scale-90 transition-transform"
+        whileHover={{ scale: 1.1, rotate: 90 }}
+        whileTap={{ scale: 0.9 }}
+        className="hidden sm:flex fixed bottom-8 right-8 w-14 h-14 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl shadow-lg shadow-purple-500/30 items-center justify-center z-40 hover:shadow-xl transition-shadow"
       >
         <Plus className="w-6 h-6" />
-      </a>
+      </motion.a>
+      
+      {/* Mobile FAB */}
+      <motion.a
+        href="/post/new"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.9 }}
+        className="sm:hidden fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full shadow-lg shadow-purple-500/30 flex items-center justify-center z-40"
+      >
+        <Plus className="w-6 h-6" />
+      </motion.a>
     </div>
   )
+}
+
+function QuickFilter({ 
+  icon: Icon, 
+  label, 
+  color,
+  active = false,
+  href
+}: { 
+  icon: React.ElementType
+  label: string
+  color: 'purple' | 'pink' | 'blue' | 'indigo'
+  active?: boolean
+  href?: string
+}) {
+  const colorClasses = {
+    purple: 'text-purple-500 bg-purple-50 hover:bg-purple-100',
+    pink: 'text-pink-500 bg-pink-50 hover:bg-pink-100',
+    blue: 'text-blue-500 bg-blue-50 hover:bg-blue-100',
+    indigo: 'text-indigo-500 bg-indigo-50 hover:bg-indigo-100',
+  }
+
+  const activeClasses = {
+    purple: 'bg-purple-500 text-white shadow-lg shadow-purple-500/25 hover:bg-purple-600',
+    pink: 'bg-pink-500 text-white shadow-lg shadow-pink-500/25 hover:bg-pink-600',
+    blue: 'bg-blue-500 text-white shadow-lg shadow-blue-500/25 hover:bg-blue-600',
+    indigo: 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 hover:bg-indigo-600',
+  }
+
+  const content = (
+    <motion.div
+      whileHover={{ scale: 1.05, y: -2 }}
+      whileTap={{ scale: 0.95 }}
+      className={`flex items-center gap-2 px-4 py-2.5 rounded-full transition-all duration-300 cursor-pointer ${
+        active ? activeClasses[color] : colorClasses[color]
+      }`}
+    >
+      <Icon className="w-4 h-4" />
+      <span className="text-sm font-medium">{label}</span>
+    </motion.div>
+  )
+
+  if (href) {
+    return <a href={href}>{content}</a>
+  }
+
+  return content
 }
