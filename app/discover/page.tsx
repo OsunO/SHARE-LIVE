@@ -52,7 +52,7 @@ const itemVariants = {
     scale: 1,
     transition: {
       duration: 0.4,
-      ease: [0.34, 1.56, 0.64, 1]
+      ease: [0.34, 1.56, 0.64, 1] as const
     }
   }
 }
