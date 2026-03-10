@@ -107,10 +107,10 @@ export default async function Home() {
 
           {/* Quick Stats / Filters */}
           <div className="flex justify-center gap-3 sm:gap-4 mt-6 animate-slide-up">
-            <QuickFilter icon={Sparkles} label="新鲜事" color="purple" active />
-            <QuickFilter icon={TrendingUp} label="热门" color="pink" />
-            <QuickFilter icon={Users} label="关注" color="blue" />
-            <QuickFilter icon={Compass} label="发现" color="indigo" href="/discover" />
+            <QuickFilter iconName="Sparkles" label="新鲜事" color="purple" active />
+            <QuickFilter iconName="TrendingUp" label="热门" color="pink" />
+            <QuickFilter iconName="Users" label="关注" color="blue" />
+            <QuickFilter iconName="Compass" label="发现" color="indigo" href="/discover" />
           </div>
         </div>
       </section>

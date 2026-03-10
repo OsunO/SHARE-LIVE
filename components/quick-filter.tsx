@@ -1,23 +1,32 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import type { ElementType } from 'react'
+import { Sparkles, TrendingUp, Users, Compass, type LucideIcon } from 'lucide-react'
 
 interface QuickFilterProps {
-  icon: ElementType
+  iconName: 'Sparkles' | 'TrendingUp' | 'Users' | 'Compass'
   label: string
   color: 'purple' | 'pink' | 'blue' | 'indigo'
   active?: boolean
   href?: string
 }
 
+const iconMap: Record<string, LucideIcon> = {
+  Sparkles,
+  TrendingUp,
+  Users,
+  Compass
+}
+
 export function QuickFilter({ 
-  icon: Icon, 
+  iconName, 
   label, 
   color,
   active = false,
   href
 }: QuickFilterProps) {
+  const Icon = iconMap[iconName]
+  
   const colorClasses = {
     purple: 'text-purple-500 bg-purple-50 hover:bg-purple-100',
     pink: 'text-pink-500 bg-pink-50 hover:bg-pink-100',
