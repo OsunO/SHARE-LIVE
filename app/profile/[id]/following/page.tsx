@@ -46,7 +46,7 @@ async function getUserAndFollowing(
   const nextCursor = lastFollow?.id || null
 
   const followingWithStatus = await Promise.all(
-    following.map(async (f) => {
+    following.map(async (f: typeof following[0]) => {
       let isFollowing = false
       if (currentUserId && currentUserId !== f.following.id) {
         const follow = await prisma.follow.findUnique({
@@ -128,7 +128,7 @@ export default async function FollowingPage({
           </div>
         ) : (
           <div className="bg-white divide-y divide-gray-100">
-            {following.map((followedUser) => (
+            {following.map((followedUser: typeof following[0]) => (
               <div
                 key={followedUser.id}
                 className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"

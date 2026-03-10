@@ -67,7 +67,7 @@ export default async function Home() {
   const initialCursor = lastPost?.id || null
 
   // Serialize dates for client component
-  const serializedPosts = posts.map(post => ({
+  const serializedPosts = posts.map((post: typeof posts[0]) => ({
     ...post,
     createdAt: post.createdAt.toISOString()
   }))

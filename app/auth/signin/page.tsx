@@ -1,13 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Mail, Lock, ArrowRight, Sparkles, Eye, EyeOff } from 'lucide-react'
 
-export default function SignInPage() {
+function SignInForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -15,6 +15,8 @@ export default function SignInPage() {
   const [loading, setLoading] = useState(false)
   const [focusedField, setFocusedField] = useState<string | null>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get('callbackUrl') || '/'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,14 +27,15 @@ export default function SignInPage() {
       const result = await signIn('credentials', {
         email,
         password,
-        redirect: false
+        redirect: false,
+        callbackUrl
       })
 
       if (result?.error) {
         setError('邮箱或密码错误')
       } else {
-        router.push('/')
-        router.refresh()
+        // 使用 window.location.href 确保页面完全刷新，session 正确同步
+        window.location.href = callbackUrl
       }
     } catch (err) {
       setError('登录失败，请重试')
@@ -303,5 +306,32 @@ export default function SignInPage() {
         </div>
       </motion.div>
     </div>
+  )
+}
+
+// Loading fallback for Suspense
+function SignInLoading() {
+  return (
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-purple-600 via-pink-500 to-blue-600 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="backdrop-blur-2xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl p-8 text-center">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto"
+          />
+          <p className="text-white/70 mt-4">加载中...</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Main page component with Suspense
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<SignInLoading />}>
+      <SignInForm />
+    </Suspense>
   )
 }

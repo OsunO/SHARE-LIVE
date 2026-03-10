@@ -42,7 +42,7 @@ export async function GET(
     })
 
     // 转换格式
-    const formattedStories = stories.map(story => ({
+    const formattedStories = stories.map((story: typeof stories[0]) => ({
       id: story.id,
       mediaUrl: story.mediaUrl,
       mediaType: story.mediaType,

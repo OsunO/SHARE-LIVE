@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
       where: { followerId: currentUserId },
       select: { followingId: true }
     })
-    const followingIds = following.map(f => f.followingId)
+    const followingIds = following.map((f: { followingId: string }) => f.followingId)
 
     // 包括自己
     const userIds = [currentUserId, ...followingIds]
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
 
     // 按作者分组，每个作者只保留最新的一个用于展示气泡
     const authorStoriesMap = new Map()
-    stories.forEach(story => {
+    stories.forEach((story: typeof stories[0]) => {
       if (!authorStoriesMap.has(story.authorId)) {
         authorStoriesMap.set(story.authorId, {
           ...story,

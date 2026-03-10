@@ -41,7 +41,7 @@ export async function GET(
     const session = await getServerSession(authOptions)
     
     const followingWithStatus = await Promise.all(
-      following.map(async (f) => {
+      following.map(async (f: typeof following[0]) => {
         let isFollowing = false
         if (session?.user?.id && session.user.id !== f.following.id) {
           const follow = await prisma.follow.findUnique({

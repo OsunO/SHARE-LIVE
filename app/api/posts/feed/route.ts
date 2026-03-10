@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
       select: { followingId: true }
     })
 
-    const followingIds = following.map((f) => f.followingId)
+    const followingIds = following.map((f: { followingId: string }) => f.followingId)
 
     // Include user's own posts plus posts from followed users
     const authorIds = [userId, ...followingIds]
@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
     const nextCursor = lastPost?.id || null
 
     return NextResponse.json({
-      posts: posts.map((post) => ({
+      posts: posts.map((post: typeof posts[0]) => ({
         ...post,
         isLiked: post.likes.length > 0,
         isFavorited: post.favorites.length > 0,

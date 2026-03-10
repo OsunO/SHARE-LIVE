@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     })
 
     // 序列化日期
-    const serializedNotifications = notifications.map(n => ({
+    const serializedNotifications = notifications.map((n: any) => ({
       ...n,
       createdAt: n.createdAt.toISOString(),
       updatedAt: n.updatedAt.toISOString()

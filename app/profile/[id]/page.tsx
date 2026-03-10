@@ -89,7 +89,7 @@ async function getUserPosts(userId: string, currentUserId: string) {
   const initialCursor = lastPost?.id || null
 
   return {
-    posts: posts.map(post => ({
+    posts: posts.map((post: typeof posts[0]) => ({
       ...post,
       createdAt: post.createdAt.toISOString()
     })),
