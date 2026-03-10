@@ -5,8 +5,9 @@ import { prisma } from '@/lib/prisma'
 import { InfiniteFeed } from '@/components/infinite-feed'
 import { Navbar } from '@/components/navbar'
 import { StoriesBar } from '@/components/stories/StoriesBar'
+import { FloatingActionButton } from '@/components/floating-action-button'
+import { QuickFilter } from '@/components/quick-filter'
 import { Sparkles, TrendingUp, Users, Plus, Compass } from 'lucide-react'
-import { motion } from 'framer-motion'
 
 const POSTS_PER_PAGE = 10
 
@@ -135,72 +136,8 @@ export default async function Home() {
         />
       </main>
 
-      {/* Floating Action Button - Desktop */}
-      <motion.a
-        href="/post/new"
-        whileHover={{ scale: 1.1, rotate: 90 }}
-        whileTap={{ scale: 0.9 }}
-        className="hidden sm:flex fixed bottom-8 right-8 w-14 h-14 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl shadow-lg shadow-purple-500/30 items-center justify-center z-40 hover:shadow-xl transition-shadow"
-      >
-        <Plus className="w-6 h-6" />
-      </motion.a>
-      
-      {/* Mobile FAB */}
-      <motion.a
-        href="/post/new"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.9 }}
-        className="sm:hidden fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full shadow-lg shadow-purple-500/30 flex items-center justify-center z-40"
-      >
-        <Plus className="w-6 h-6" />
-      </motion.a>
+      {/* Floating Action Button */}
+      <FloatingActionButton />
     </div>
   )
-}
-
-function QuickFilter({ 
-  icon: Icon, 
-  label, 
-  color,
-  active = false,
-  href
-}: { 
-  icon: React.ElementType
-  label: string
-  color: 'purple' | 'pink' | 'blue' | 'indigo'
-  active?: boolean
-  href?: string
-}) {
-  const colorClasses = {
-    purple: 'text-purple-500 bg-purple-50 hover:bg-purple-100',
-    pink: 'text-pink-500 bg-pink-50 hover:bg-pink-100',
-    blue: 'text-blue-500 bg-blue-50 hover:bg-blue-100',
-    indigo: 'text-indigo-500 bg-indigo-50 hover:bg-indigo-100',
-  }
-
-  const activeClasses = {
-    purple: 'bg-purple-500 text-white shadow-lg shadow-purple-500/25 hover:bg-purple-600',
-    pink: 'bg-pink-500 text-white shadow-lg shadow-pink-500/25 hover:bg-pink-600',
-    blue: 'bg-blue-500 text-white shadow-lg shadow-blue-500/25 hover:bg-blue-600',
-    indigo: 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 hover:bg-indigo-600',
-  }
-
-  const content = (
-    <motion.div
-      whileHover={{ scale: 1.05, y: -2 }}
-      whileTap={{ scale: 0.95 }}
-      className={`flex items-center gap-2 px-4 py-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-        active ? activeClasses[color] : colorClasses[color]
-      }`}
-    >
-      <Icon className="w-4 h-4" />
-      <span className="text-sm font-medium">{label}</span>
-    </motion.div>
-  )
-
-  if (href) {
-    return <a href={href}>{content}</a>
-  }
-
-  return content
 }
