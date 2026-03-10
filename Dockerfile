@@ -1,9 +1,9 @@
-# 使用 Node.js 官方镜像 (通过国内镜像源)
-FROM hub.rat.dev/library/node:20-alpine AS base
+# 使用 Node.js Debian 官方镜像
+FROM hub.rat.dev/library/node:20-slim AS base
 
 # 安装依赖
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # 安装依赖
@@ -16,14 +16,14 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# 设置构建时内存限制 (896MB 更合理)
+# 设置构建时内存限制
 ARG NODE_OPTIONS
-ENV NODE_OPTIONS=${NODE_OPTIONS:-"--max-old-space-size=896"}
+ENV NODE_OPTIONS=${NODE_OPTIONS:--"-max-old-space-size=896"}
 
-# 生成 Prisma Client (使用本地安装的 prisma)
+# 生成 Prisma Client
 RUN npm run db:generate
 
-# 构建 Next.js 应用 (限制并发以减少内存)
+# 构建 Next.js 应用
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN NODE_OPTIONS="${NODE_OPTIONS}" npm run build
 
@@ -34,11 +34,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # 安装 OpenSSL (Prisma 需要)
-RUN apk add --no-cache openssl
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 # 创建非 root 用户
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN groupadd --system --gid 1001 nodejs
+RUN useradd --system --uid 1001 nextjs
 
 # 复制构建产物
 COPY --from=builder /app/public ./public
