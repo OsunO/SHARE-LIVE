@@ -20,7 +20,10 @@ COPY . .
 ARG NODE_OPTIONS
 ENV NODE_OPTIONS=${NODE_OPTIONS:--"-max-old-space-size=896"}
 
-# 生成 Prisma Client
+# 设置 Prisma 引擎为 Debian OpenSSL 3.0
+ENV PRISMA_ENGINES_CHECKSUM_IGNORE=1
+
+# 生成 Prisma Client (指定引擎)
 RUN npm run db:generate
 
 # 构建 Next.js 应用
@@ -45,10 +48,14 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# 复制 Prisma 相关文件
+# 复制 Prisma 相关文件 - 只复制需要的引擎
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/prisma ./prisma
+
+# 删除不需要的引擎，只保留 Debian OpenSSL 3.0
+RUN rm -f node_modules/.prisma/client/libquery_engine-linux-musl*.so.node
+RUN rm -f node_modules/.prisma/client/libquery_engine-debian-openssl-1.1.x.so.node
 
 USER nextjs
 
