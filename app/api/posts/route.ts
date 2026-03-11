@@ -16,6 +16,13 @@ export async function GET(req: NextRequest) {
     const cursor = searchParams.get('cursor')
     const limit = parseInt(searchParams.get('limit') || String(POSTS_PER_PAGE))
 
+    const sort = searchParams.get('sort')
+    
+    // Determine orderBy based on sort parameter
+    const orderBy = sort === 'popular' 
+      ? { likes: { _count: 'desc' as const } }
+      : { createdAt: 'desc' as const }
+
     const posts = await prisma.post.findMany({
       where: { published: true },
       include: {
@@ -38,7 +45,7 @@ export async function GET(req: NextRequest) {
         cursor: { id: cursor },
         skip: 1
       }),
-      orderBy: { createdAt: 'desc' },
+      orderBy,
       take: limit
     })
 

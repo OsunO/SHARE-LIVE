@@ -9,6 +9,7 @@ interface QuickFilterProps {
   color: 'purple' | 'pink' | 'blue' | 'indigo'
   active?: boolean
   href?: string
+  onClick?: () => void
 }
 
 const iconMap: Record<string, LucideIcon> = {
@@ -23,7 +24,8 @@ export function QuickFilter({
   label, 
   color,
   active = false,
-  href
+  href,
+  onClick
 }: QuickFilterProps) {
   const Icon = iconMap[iconName]
   
@@ -45,6 +47,7 @@ export function QuickFilter({
     <motion.div
       whileHover={{ scale: 1.05, y: -2 }}
       whileTap={{ scale: 0.95 }}
+      onClick={onClick}
       className={`flex items-center gap-2 px-4 py-2.5 rounded-full transition-all duration-300 cursor-pointer ${
         active ? activeClasses[color] : colorClasses[color]
       }`}

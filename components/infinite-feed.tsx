@@ -35,6 +35,7 @@ interface InfiniteFeedProps {
   initialPosts: Post[]
   initialCursor: string | null
   currentUserId: string
+  apiEndpoint?: string
 }
 
 const POSTS_PER_PAGE = 10
@@ -63,7 +64,12 @@ const itemVariants = {
   }
 }
 
-export function InfiniteFeed({ initialPosts, initialCursor, currentUserId }: InfiniteFeedProps) {
+export function InfiniteFeed({ 
+  initialPosts, 
+  initialCursor, 
+  currentUserId,
+  apiEndpoint = '/api/posts'
+}: InfiniteFeedProps) {
   const [posts, setPosts] = useState<Post[]>(initialPosts)
   const [cursor, setCursor] = useState<string | null>(initialCursor)
   const [hasMore, setHasMore] = useState(true)
@@ -72,6 +78,14 @@ export function InfiniteFeed({ initialPosts, initialCursor, currentUserId }: Inf
   
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadMoreRef = useRef<HTMLDivElement>(null)
+  
+  // Reset state when apiEndpoint changes
+  useEffect(() => {
+    setPosts(initialPosts)
+    setCursor(initialCursor)
+    setHasMore(true)
+    setError(null)
+  }, [apiEndpoint, initialPosts, initialCursor])
 
   const loadMorePosts = useCallback(async () => {
     if (isLoading || !hasMore || !cursor) return
@@ -80,7 +94,7 @@ export function InfiniteFeed({ initialPosts, initialCursor, currentUserId }: Inf
     setError(null)
     
     try {
-      const response = await fetch(`/api/posts?cursor=${cursor}&limit=${POSTS_PER_PAGE}`)
+      const response = await fetch(`${apiEndpoint}?cursor=${cursor}&limit=${POSTS_PER_PAGE}`)
       
       if (!response.ok) {
         throw new Error('Failed to load more posts')

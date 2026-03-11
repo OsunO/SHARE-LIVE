@@ -1,13 +1,42 @@
-import { getServerSession } from 'next-auth/next'
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
 import { redirect } from 'next/navigation'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
 import { InfiniteFeed } from '@/components/infinite-feed'
 import { Navbar } from '@/components/navbar'
 import { StoriesBar } from '@/components/stories/StoriesBar'
 import { FloatingActionButton } from '@/components/floating-action-button'
 import { QuickFilter } from '@/components/quick-filter'
-import { Sparkles, TrendingUp, Users, Plus, Compass } from 'lucide-react'
+import { Sparkles, TrendingUp, Users, Plus } from 'lucide-react'
+import { motion } from 'framer-motion'
+
+interface Post {
+  id: string
+  content: string
+  images: string[]
+  createdAt: string
+  author: {
+    id: string
+    name: string | null
+    image: string | null
+  }
+  _count: {
+    likes: number
+    comments: number
+    favorites: number
+  }
+  likes: { id: string }[]
+  favorites: { id: string }[]
+}
+
+interface FeedData {
+  posts: Post[]
+  nextCursor: string | null
+  hasMore: boolean
+}
+
+type FeedType = 'latest' | 'popular' | 'following'
 
 const POSTS_PER_PAGE = 10
 
@@ -34,51 +63,85 @@ function getTagline(): string {
   return taglines[Math.floor(Math.random() * taglines.length)]
 }
 
-export default async function Home() {
-  const session = await getServerSession(authOptions)
-  
-  if (!session) {
+export default function Home() {
+  const { data: session, status } = useSession()
+  const [activeFilter, setActiveFilter] = useState<FeedType>('latest')
+  const [feedData, setFeedData] = useState<FeedData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Redirect if not authenticated
+  if (status === 'unauthenticated') {
     redirect('/auth/signin')
   }
 
-  // Fetch initial posts for SSR
-  const posts = await prisma.post.findMany({
-    where: { published: true },
-    include: {
-      author: {
-        select: { id: true, name: true, image: true }
-      },
-      _count: {
-        select: { likes: true, comments: true, favorites: true }
-      },
-      likes: {
-        where: { userId: session.user.id },
-        select: { id: true }
-      },
-      favorites: {
-        where: { userId: session.user.id },
-        select: { id: true }
+  // Fetch feed data based on active filter
+  useEffect(() => {
+    if (status !== 'authenticated') return
+
+    const fetchFeed = async () => {
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        let endpoint = '/api/posts'
+        if (activeFilter === 'following') {
+          endpoint = '/api/posts/feed'
+        } else if (activeFilter === 'popular') {
+          endpoint = '/api/posts?sort=popular'
+        }
+
+        const response = await fetch(`${endpoint}?limit=${POSTS_PER_PAGE}`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch feed')
+        }
+
+        const data = await response.json()
+        setFeedData({
+          posts: data.posts.map((post: Post) => ({
+            ...post,
+            createdAt: typeof post.createdAt === 'string' 
+              ? post.createdAt 
+              : new Date(post.createdAt).toISOString()
+          })),
+          nextCursor: data.nextCursor,
+          hasMore: data.hasMore
+        })
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Something went wrong')
+      } finally {
+        setIsLoading(false)
       }
-    },
-    orderBy: { createdAt: 'desc' },
-    take: POSTS_PER_PAGE
-  })
+    }
 
-  const lastPost = posts[posts.length - 1]
-  const initialCursor = lastPost?.id || null
+    fetchFeed()
+  }, [activeFilter, status])
 
-  // Serialize dates for client component
-  const serializedPosts = posts.map((post: typeof posts[0]) => ({
-    ...post,
-    createdAt: post.createdAt.toISOString()
-  }))
+  const getApiEndpoint = () => {
+    if (activeFilter === 'following') return '/api/posts/feed'
+    if (activeFilter === 'popular') return '/api/posts?sort=popular'
+    return '/api/posts'
+  }
 
   const greeting = getGreeting()
   const tagline = getTagline()
 
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+        >
+          <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full" />
+        </motion.div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
-      <Navbar user={session.user} />
+      <Navbar user={session?.user || { id: '', name: null, email: null, image: null }} />
       
       {/* Stories Bar */}
       <div className="pt-16">
@@ -97,7 +160,7 @@ export default async function Home() {
           <div className="text-center animate-fade-in">
             <h1 className="text-2xl sm:text-3xl font-bold mb-2">
               <span className="text-gray-800">{greeting}，</span>
-              <span className="gradient-text">{session.user.name || '朋友'}</span>
+              <span className="gradient-text">{session?.user?.name || '朋友'}</span>
               <span className="inline-block animate-bounce-soft ml-1">👋</span>
             </h1>
             <p className="text-gray-600 text-sm sm:text-base animate-slide-up">
@@ -107,10 +170,36 @@ export default async function Home() {
 
           {/* Quick Stats / Filters */}
           <div className="flex justify-center gap-3 sm:gap-4 mt-6 animate-slide-up">
-            <QuickFilter iconName="Sparkles" label="新鲜事" color="purple" active />
-            <QuickFilter iconName="TrendingUp" label="热门" color="pink" />
-            <QuickFilter iconName="Users" label="关注" color="blue" />
-            <QuickFilter iconName="Compass" label="发现" color="indigo" href="/discover" />
+            <button onClick={() => setActiveFilter('latest')}>
+              <QuickFilter 
+                iconName="Sparkles" 
+                label="新鲜事" 
+                color="purple" 
+                active={activeFilter === 'latest'} 
+              />
+            </button>
+            <button onClick={() => setActiveFilter('popular')}>
+              <QuickFilter 
+                iconName="TrendingUp" 
+                label="热门" 
+                color="pink" 
+                active={activeFilter === 'popular'} 
+              />
+            </button>
+            <button onClick={() => setActiveFilter('following')}>
+              <QuickFilter 
+                iconName="Users" 
+                label="关注" 
+                color="blue" 
+                active={activeFilter === 'following'} 
+              />
+            </button>
+            <QuickFilter 
+              iconName="Compass" 
+              label="发现" 
+              color="indigo" 
+              href="/discover" 
+            />
           </div>
         </div>
       </section>
@@ -129,11 +218,33 @@ export default async function Home() {
         </div>
 
         {/* Feed */}
-        <InfiniteFeed 
-          initialPosts={serializedPosts}
-          initialCursor={initialCursor}
-          currentUserId={session.user.id}
-        />
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+            >
+              <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full" />
+            </motion.div>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12 text-red-500">
+            <p>{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="mt-4 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600"
+            >
+              重试
+            </button>
+          </div>
+        ) : feedData ? (
+          <InfiniteFeed 
+            initialPosts={feedData.posts}
+            initialCursor={feedData.nextCursor}
+            currentUserId={session?.user?.id || ''}
+            apiEndpoint={getApiEndpoint()}
+          />
+        ) : null}
       </main>
 
       {/* Floating Action Button */}
