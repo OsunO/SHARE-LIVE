@@ -3,9 +3,8 @@ import { notFound } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { FollowButton } from '@/components/FollowButton'
-import { InfiniteFeed } from '@/components/infinite-feed'
+import { ProfileTabs } from '@/components/profile-tabs'
 import { Navbar } from '@/components/navbar'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatDate } from '@/lib/utils'
 import { Camera, MapPin, Link as LinkIcon, Calendar } from 'lucide-react'
 import Link from 'next/link'
@@ -234,59 +233,13 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           </div>
 
           {/* Tabs Content */}
-          <Tabs defaultValue="posts" className="w-full">
-            <TabsList className="w-full bg-white/80 backdrop-blur-sm border border-gray-200/50 rounded-xl p-1 mb-4">
-              <TabsTrigger 
-                value="posts" 
-                className="flex-1 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white"
-              >
-                帖子
-              </TabsTrigger>
-              <TabsTrigger 
-                value="saved"
-                className="flex-1 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white"
-              >
-                收藏
-              </TabsTrigger>
-              <TabsTrigger 
-                value="liked"
-                className="flex-1 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white"
-              >
-                赞过
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="posts">
-              {posts.length > 0 ? (
-                <InfiniteFeed 
-                  initialPosts={posts}
-                  initialCursor={initialCursor}
-                  currentUserId={currentUserId || ''}
-                />
-              ) : (
-                <div className="text-center py-12 text-gray-500 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50">
-                  <p className="text-lg mb-2">还没有发布任何内容</p>
-                  {user.isSelf && (
-                    <Link href="/post/new" className="text-purple-600 hover:underline">
-                      发布第一条动态 →
-                    </Link>
-                  )}
-                </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="saved">
-              <div className="text-center py-12 text-gray-500 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50">
-                <p>收藏功能即将上线</p>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="liked">
-              <div className="text-center py-12 text-gray-500 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50">
-                <p>点赞记录功能即将上线</p>
-              </div>
-            </TabsContent>
-          </Tabs>
+          <ProfileTabs
+            userId={user.id}
+            currentUserId={currentUserId || ''}
+            initialPosts={posts}
+            initialCursor={initialCursor}
+            isSelf={user.isSelf}
+          />
         </div>
       </main>
     </div>
