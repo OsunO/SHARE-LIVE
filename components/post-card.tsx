@@ -31,10 +31,19 @@ interface PostCardProps {
   currentUserId: string
   onLikeUpdate?: (postId: string, liked: boolean, likeCount: number) => void
   onFavoriteUpdate?: (postId: string, favorited: boolean) => void
+  onImageClick?: (images: string[], index: number, postId: string) => void
 }
 
 // Optimized image grid layout based on image count
-function ImageGrid({ images, postId }: { images: string[]; postId: string }) {
+function ImageGrid({ 
+  images, 
+  postId,
+  onImageClick 
+}: { 
+  images: string[]; 
+  postId: string
+  onImageClick?: (images: string[], index: number, postId: string) => void
+}) {
   const getGridClass = () => {
     switch (images.length) {
       case 1:
@@ -79,6 +88,13 @@ function ImageGrid({ images, postId }: { images: string[]; postId: string }) {
     return 'small'
   }
 
+  const handleImageClick = (e: React.MouseEvent, idx: number) => {
+    if (onImageClick) {
+      e.preventDefault()
+      onImageClick(images, idx, postId)
+    }
+  }
+
   return (
     <div className={`grid gap-1.5 sm:gap-2 ${getGridClass()}`}>
       {images.slice(0, 4).map((image, idx) => (
@@ -89,6 +105,7 @@ function ImageGrid({ images, postId }: { images: string[]; postId: string }) {
           transition={{ delay: idx * 0.05, duration: 0.3 }}
           whileHover={{ scale: 1.02 }}
           className={`relative overflow-hidden rounded-xl cursor-pointer group ${getImageSpan(idx)}`}
+          onClick={(e) => handleImageClick(e, idx)}
         >
           <Link href={`/post/${postId}?image=${idx}`}>
             <LazyImage
@@ -302,7 +319,7 @@ function ExpandableContent({ content }: { content: string }) {
   )
 }
 
-export function PostCard({ post, currentUserId, onLikeUpdate, onFavoriteUpdate }: PostCardProps) {
+export function PostCard({ post, currentUserId, onLikeUpdate, onFavoriteUpdate, onImageClick }: PostCardProps) {
   const [isLiked, setIsLiked] = useState(post.likes.length > 0)
   const [isFavorited, setIsFavorited] = useState(post.favorites.length > 0)
   const [likeCount, setLikeCount] = useState(post._count.likes)
@@ -414,7 +431,7 @@ export function PostCard({ post, currentUserId, onLikeUpdate, onFavoriteUpdate }
       {/* Images - Enhanced Grid with Lazy Loading */}
       {post.images.length > 0 && (
         <div className="px-4 pb-3">
-          <ImageGrid images={post.images} postId={post.id} />
+          <ImageGrid images={post.images} postId={post.id} onImageClick={onImageClick} />
         </div>
       )}
 

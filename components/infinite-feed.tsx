@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { PostCard } from './post-card'
 import { PostCardSkeleton, EmptyState } from './post-card-skeleton'
 import { MasonryGrid } from './masonry-grid'
+import { ImageLightbox, useLightbox } from './image-lightbox'
 import { Loader2, RefreshCw } from 'lucide-react'
 
 interface Post {
@@ -81,6 +82,9 @@ export function InfiniteFeed({
   
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadMoreRef = useRef<HTMLDivElement>(null)
+  
+  // Lightbox state
+  const { isOpen, images, initialIndex, postId, openLightbox, closeLightbox } = useLightbox()
   
   // Reset state when apiEndpoint or layout changes
   useEffect(() => {
@@ -190,6 +194,7 @@ export function InfiniteFeed({
         currentUserId={currentUserId}
         onLikeUpdate={handleLikeUpdate}
         onFavoriteUpdate={handleFavoriteUpdate}
+        onImageClick={openLightbox}
       />
     </motion.div>
   )
@@ -305,6 +310,15 @@ export function InfiniteFeed({
           </motion.div>
         )}
       </AnimatePresence>
+      
+      {/* Image Lightbox */}
+      <ImageLightbox
+        images={images}
+        initialIndex={initialIndex}
+        isOpen={isOpen}
+        onClose={closeLightbox}
+        postId={postId}
+      />
     </div>
   )
 }
