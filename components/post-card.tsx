@@ -70,6 +70,15 @@ function ImageGrid({ images, postId }: { images: string[]; postId: string }) {
     }
   }
 
+  // 根据图片数量和位置决定使用什么尺寸
+  const getImageSize = (idx: number, totalImages: number): 'thumbnail' | 'small' | 'medium' => {
+    // 首图使用中等尺寸
+    if (idx === 0) return 'medium'
+    // 其他图片使用小尺寸
+    if (totalImages <= 2) return 'medium'
+    return 'small'
+  }
+
   return (
     <div className={`grid gap-1.5 sm:gap-2 ${getGridClass()}`}>
       {images.slice(0, 4).map((image, idx) => (
@@ -87,6 +96,7 @@ function ImageGrid({ images, postId }: { images: string[]; postId: string }) {
               alt={`图片 ${idx + 1}`}
               aspectRatio={images.length === 1 ? 'landscape' : 'square'}
               priority={idx === 0}
+              size={getImageSize(idx, images.length)}
               className="w-full h-full transition-all duration-500 group-hover:scale-105"
             />
             {/* Hover overlay with gradient */}

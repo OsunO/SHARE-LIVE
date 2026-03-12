@@ -70,7 +70,8 @@ export function InfiniteFeed({
   initialPosts, 
   initialCursor, 
   currentUserId,
-  apiEndpoint = '/api/posts'
+  apiEndpoint = '/api/posts',
+  layout = 'list'
 }: InfiniteFeedProps) {
   const [posts, setPosts] = useState<Post[]>(initialPosts)
   const [cursor, setCursor] = useState<string | null>(initialCursor)
@@ -81,13 +82,13 @@ export function InfiniteFeed({
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadMoreRef = useRef<HTMLDivElement>(null)
   
-  // Reset state when apiEndpoint changes
+  // Reset state when apiEndpoint or layout changes
   useEffect(() => {
     setPosts(initialPosts)
     setCursor(initialCursor)
     setHasMore(true)
     setError(null)
-  }, [apiEndpoint, initialPosts, initialCursor])
+  }, [apiEndpoint, initialPosts, initialCursor, layout])
 
   const loadMorePosts = useCallback(async () => {
     if (isLoading || !hasMore || !cursor) return
@@ -112,7 +113,7 @@ export function InfiniteFeed({
     } finally {
       setIsLoading(false)
     }
-  }, [cursor, hasMore, isLoading])
+  }, [cursor, hasMore, isLoading, apiEndpoint])
 
   useEffect(() => {
     observerRef.current = new IntersectionObserver(
@@ -121,7 +122,7 @@ export function InfiniteFeed({
           loadMorePosts()
         }
       },
-      { rootMargin: '150px' }
+      { rootMargin: '200px' }
     )
 
     if (loadMoreRef.current) {
@@ -172,6 +173,27 @@ export function InfiniteFeed({
     loadMorePosts()
   }
 
+  // Render post card wrapper
+  const renderPostCard = (post: Post, index: number) => (
+    <motion.div
+      key={post.id}
+      variants={itemVariants}
+      layout
+      transition={{ 
+        layout: { duration: 0.3 },
+        opacity: { duration: 0.3 },
+        y: { duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }
+      }}
+    >
+      <PostCard
+        post={post}
+        currentUserId={currentUserId}
+        onLikeUpdate={handleLikeUpdate}
+        onFavoriteUpdate={handleFavoriteUpdate}
+      />
+    </motion.div>
+  )
+
   // Empty state
   if (posts.length === 0 && !isLoading) {
     return (
@@ -183,33 +205,24 @@ export function InfiniteFeed({
   }
 
   return (
-    <motion.div 
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="space-y-6"
-    >
-      <AnimatePresence mode="popLayout">
-        {posts.map((post, index) => (
-          <motion.div
-            key={post.id}
-            variants={itemVariants}
-            layout
-            transition={{ 
-              layout: { duration: 0.3 },
-              opacity: { duration: 0.3 },
-              y: { duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }
-            }}
-          >
-            <PostCard
-              post={post}
-              currentUserId={currentUserId}
-              onLikeUpdate={handleLikeUpdate}
-              onFavoriteUpdate={handleFavoriteUpdate}
-            />
-          </motion.div>
-        ))}
-      </AnimatePresence>
+    <div className="space-y-6">
+      {/* Posts Grid - List or Masonry Layout */}
+      {layout === 'masonry' ? (
+        <MasonryGrid>
+          {posts.map((post, index) => renderPostCard(post, index))}
+        </MasonryGrid>
+      ) : (
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="space-y-6"
+        >
+          <AnimatePresence mode="popLayout">
+            {posts.map((post, index) => renderPostCard(post, index))}
+          </AnimatePresence>
+        </motion.div>
+      )}
       
       {/* Loading State */}
       <AnimatePresence>
@@ -219,10 +232,11 @@ export function InfiniteFeed({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
-            className="space-y-6"
+            className={layout === 'masonry' ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4' : 'space-y-6'}
           >
             <PostCardSkeleton />
             <PostCardSkeleton />
+            {layout === 'masonry' && <PostCardSkeleton />}
           </motion.div>
         )}
       </AnimatePresence>
@@ -259,9 +273,13 @@ export function InfiniteFeed({
         )}
       </AnimatePresence>
       
-      {/* Intersection Observer Target */}
+      {/* Intersection Observer Target - Invisible sentinel for infinite scroll */}
       {hasMore && !error && (
-        <div ref={loadMoreRef} className="py-4 flex justify-center">
+        <div 
+          ref={loadMoreRef} 
+          className="py-8 flex justify-center"
+          style={{ minHeight: '100px' }}
+        >
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
@@ -287,6 +305,6 @@ export function InfiniteFeed({
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   )
 }

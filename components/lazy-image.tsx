@@ -1,14 +1,16 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { getOptimizedImageUrl, getBlurPlaceholderUrl, ImageSize } from '@/lib/image-utils'
 
 interface LazyImageProps {
   src: string
   alt: string
   className?: string
-  aspectRatio?: 'square' | 'portrait' | 'landscape' | 'video'
+  aspectRatio?: 'square' | 'portrait' | 'landscape' | 'video' | 'auto'
   priority?: boolean
+  size?: ImageSize
   onLoad?: () => void
   onError?: () => void
 }
@@ -17,7 +19,8 @@ const aspectRatioClasses = {
   square: 'aspect-square',
   portrait: 'aspect-[3/4]',
   landscape: 'aspect-[4/3]',
-  video: 'aspect-video'
+  video: 'aspect-video',
+  auto: ''
 }
 
 export function LazyImage({
@@ -26,16 +29,31 @@ export function LazyImage({
   className = '',
   aspectRatio = 'square',
   priority = false,
+  size = 'medium',
   onLoad,
   onError
 }: LazyImageProps) {
   const [isLoaded, setIsLoaded] = useState(false)
   const [isInView, setIsInView] = useState(priority)
   const [hasError, setHasError] = useState(false)
+  const [currentSrc, setCurrentSrc] = useState<string>('')
   const imageRef = useRef<HTMLDivElement>(null)
+  const imgElementRef = useRef<HTMLImageElement>(null)
 
+  // 生成优化后的图片 URL
+  const optimizedSrc = useCallback(() => {
+    if (!src) return ''
+    return getOptimizedImageUrl(src, size, { format: 'webp', fit: 'cover' })
+  }, [src, size])
+
+  const blurPlaceholder = useCallback(() => {
+    if (!src) return ''
+    return getBlurPlaceholderUrl(src)
+  }, [src])
+
+  // Intersection Observer 检测图片是否进入视口
   useEffect(() => {
-    if (priority) return
+    if (priority || !imageRef.current) return
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -45,17 +63,44 @@ export function LazyImage({
         }
       },
       {
-        rootMargin: '50px',
+        rootMargin: '100px',
         threshold: 0
       }
     )
 
-    if (imageRef.current) {
-      observer.observe(imageRef.current)
-    }
+    observer.observe(imageRef.current)
 
     return () => observer.disconnect()
   }, [priority])
+
+  // 当图片进入视口时，加载实际图片
+  useEffect(() => {
+    if (isInView && !currentSrc) {
+      // 先加载模糊占位图
+      const placeholder = blurPlaceholder()
+      if (placeholder && placeholder !== src) {
+        setCurrentSrc(placeholder)
+      }
+      
+      // 然后加载优化后的实际图片
+      const optimized = optimizedSrc()
+      if (optimized) {
+        const img = new Image()
+        img.onload = () => {
+          setCurrentSrc(optimized)
+        }
+        img.onerror = () => {
+          // 如果优化图片加载失败，尝试原图
+          if (src !== optimized) {
+            setCurrentSrc(src)
+          } else {
+            handleError()
+          }
+        }
+        img.src = optimized
+      }
+    }
+  }, [isInView, src, optimizedSrc, blurPlaceholder, currentSrc])
 
   const handleLoad = () => {
     setIsLoaded(true)
@@ -67,12 +112,15 @@ export function LazyImage({
     onError?.()
   }
 
+  // 计算是否是低质量占位图
+  const isPlaceholder = currentSrc === blurPlaceholder() && currentSrc !== optimizedSrc()
+
   return (
     <div
       ref={imageRef}
       className={`relative overflow-hidden bg-gray-100 ${aspectRatioClasses[aspectRatio]} ${className}`}
     >
-      {/* Skeleton Loader */}
+      {/* Skeleton Loader - 显示直到图片加载完成 */}
       <AnimatePresence>
         {!isLoaded && !hasError && (
           <motion.div
@@ -81,8 +129,9 @@ export function LazyImage({
             transition={{ duration: 0.3 }}
             className="absolute inset-0 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200"
           >
+            {/* 脉冲动画 */}
             <div className="absolute inset-0 animate-pulse">
-              <div className="h-full w-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-shimmer" />
+              <div className="h-full w-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
             </div>
           </motion.div>
         )}
@@ -110,27 +159,35 @@ export function LazyImage({
         </div>
       )}
 
-      {/* Actual Image */}
-      {isInView && !hasError && (
+      {/* Actual Image - 渐进式加载 */}
+      {isInView && !hasError && currentSrc && (
         <motion.img
-          src={src}
+          ref={imgElementRef}
+          src={currentSrc}
           alt={alt}
           loading={priority ? 'eager' : 'lazy'}
           onLoad={handleLoad}
           onError={handleError}
-          initial={{ opacity: 0, filter: 'blur(10px)' }}
+          initial={{ opacity: 0, filter: isPlaceholder ? 'blur(20px)' : 'blur(10px)' }}
           animate={{
-            opacity: isLoaded ? 1 : 0,
-            filter: isLoaded ? 'blur(0px)' : 'blur(10px)'
+            opacity: isLoaded ? 1 : 0.7,
+            filter: isLoaded ? 'blur(0px)' : isPlaceholder ? 'blur(20px)' : 'blur(10px)',
+            scale: isLoaded ? 1 : isPlaceholder ? 1.05 : 1
           }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
+          transition={{ 
+            duration: isPlaceholder ? 0.3 : 0.5, 
+            ease: 'easeOut' 
+          }}
           className="w-full h-full object-cover"
+          style={{
+            imageRendering: isPlaceholder ? 'auto' : 'auto'
+          }}
         />
       )}
 
-      {/* Blur Placeholder Effect */}
-      {!isLoaded && isInView && !hasError && (
-        <div className="absolute inset-0 backdrop-blur-sm bg-white/10" />
+      {/* 占位符模糊效果叠加层 */}
+      {!isLoaded && isInView && !hasError && isPlaceholder && (
+        <div className="absolute inset-0 backdrop-blur-md bg-white/5" />
       )}
     </div>
   )
