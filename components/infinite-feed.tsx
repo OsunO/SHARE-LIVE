@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PostCard } from './post-card'
 import { PostCardSkeleton, EmptyState } from './post-card-skeleton'
+import { MasonryGrid } from './masonry-grid'
 import { Loader2, RefreshCw } from 'lucide-react'
 
 interface Post {
@@ -36,6 +37,7 @@ interface InfiniteFeedProps {
   initialCursor: string | null
   currentUserId: string
   apiEndpoint?: string
+  layout?: 'list' | 'masonry'
 }
 
 const POSTS_PER_PAGE = 10
