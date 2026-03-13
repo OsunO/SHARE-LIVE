@@ -1,10 +1,11 @@
-import OpenAI from 'openai'
+// 动态导入 OpenAI SDK，减少初始 bundle 大小
+type OpenAIClient = any
 
-// 延迟初始化：避免在构建时因缺少 API Key 而失败
-let openaiClient: OpenAI | null = null
+let openaiClient: OpenAIClient | null = null
 
-function getOpenAIClient(): OpenAI | null {
+async function getOpenAIClient(): Promise<OpenAIClient | null> {
   if (!openaiClient && process.env.OPENAI_API_KEY) {
+    const { default: OpenAI } = await import('openai')
     openaiClient = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
       baseURL: process.env.OPENAI_BASE_URL || 'https://coding.dashscope.aliyuncs.com/v1'
@@ -16,7 +17,7 @@ function getOpenAIClient(): OpenAI | null {
 const MODEL = process.env.OPENAI_MODEL || 'kimi-k2.5'
 
 export async function analyzeImage(base64Image: string) {
-  const openai = getOpenAIClient()
+  const openai = await getOpenAIClient()
   
   // 如果没有配置 AI，返回空结果
   if (!openai) {
@@ -52,7 +53,7 @@ export async function analyzeImage(base64Image: string) {
     console.log('AI analyze result:', content)
     
     // 解析返回内容
-    const lines = content.split('\n').filter(line => line.trim())
+    const lines = content.split('\n').filter((line: string) => line.trim())
     let description = ''
     let tags: string[] = []
     
@@ -60,19 +61,19 @@ export async function analyzeImage(base64Image: string) {
       const trimmedLine = line.trim()
       // 如果行包含逗号，可能是标签行
       if (trimmedLine.includes(',') && !description) {
-        tags = trimmedLine.split(',').map(t => t.trim()).filter(Boolean)
+        tags = trimmedLine.split(',').map((t: string) => t.trim()).filter(Boolean)
       } else if (!description && !trimmedLine.includes(',')) {
         description = trimmedLine
       } else if (trimmedLine.includes(',')) {
         // 合并标签
-        const newTags = trimmedLine.split(',').map(t => t.trim()).filter(Boolean)
+        const newTags = trimmedLine.split(',').map((t: string) => t.trim()).filter(Boolean)
         tags = [...tags, ...newTags]
       }
     }
     
     // 如果还没有标签，把整个内容当作标签处理
     if (tags.length === 0 && content) {
-      tags = content.split(/[,，]/).map(t => t.trim()).filter(Boolean).slice(0, 10)
+      tags = content.split(/[,，]/).map((t: string) => t.trim()).filter(Boolean).slice(0, 10)
     }
     
     return {
@@ -90,7 +91,7 @@ export async function analyzeImage(base64Image: string) {
 }
 
 export async function moderateContent(text: string) {
-  const openai = getOpenAIClient()
+  const openai = await getOpenAIClient()
   
   // 如果没有配置 AI，默认通过审核
   if (!openai) {

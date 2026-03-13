@@ -1,13 +1,15 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { writeFile } from 'fs/promises'
 import { join } from 'path'
 import { v4 as uuidv4 } from 'uuid'
-import * as Minio from 'minio'
 
-// 创建 MinIO 客户端
-const createMinioClient = () => {
+// 动态导入 MinIO，减少 bundle 大小
+async function getMinioClient() {
+  const Minio = await import('minio')
   return new Minio.Client({
     endPoint: process.env.MINIO_ENDPOINT || 'minio',
     port: parseInt(process.env.MINIO_PORT || '9000'),
@@ -18,7 +20,7 @@ const createMinioClient = () => {
 }
 
 // 确保 bucket 存在
-const ensureBucket = async (client: Minio.Client, bucketName: string) => {
+async function ensureBucket(client: any, bucketName: string) {
   const exists = await client.bucketExists(bucketName)
   if (!exists) {
     await client.makeBucket(bucketName)
@@ -64,8 +66,8 @@ export async function POST(req: NextRequest) {
     let url: string
     
     if (uploadProvider === 'minio') {
-      // MinIO 上传
-      const minioClient = createMinioClient()
+      // MinIO 上传 (动态导入)
+      const minioClient = await getMinioClient()
       const bucketName = process.env.MINIO_BUCKET_NAME || 'sharelive-uploads'
       
       await ensureBucket(minioClient, bucketName)
@@ -78,7 +80,7 @@ export async function POST(req: NextRequest) {
         { 'Content-Type': file.type || 'image/jpeg' }
       )
       
-        // 构建 URL - 外部访问端口可能不同于内部端口
+      // 构建 URL - 外部访问端口可能不同于内部端口
       url = `http://101.34.245.133:${process.env.MINIO_PUBLIC_PORT || process.env.MINIO_PORT || '9000'}/${bucketName}/${filename}`
     } else {
       // 本地存储
