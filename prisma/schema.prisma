@@ -90,6 +90,10 @@ model Post {
   likes     Like[]
   favorites Favorite[]
   notifications Notification[]
+
+  @@index([authorId])
+  @@index([createdAt])
+  @@index([published])
 }
 
 model Comment {
@@ -102,6 +106,9 @@ model Comment {
 
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
   post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([authorId])
 }
 
 model Like {
@@ -114,6 +121,8 @@ model Like {
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@unique([userId, postId])
+  @@index([postId])
+  @@index([userId])
 }
 
 model Favorite {
@@ -126,6 +135,8 @@ model Favorite {
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@unique([userId, postId])
+  @@index([postId])
+  @@index([userId])
 }
 
 model Follow {
@@ -138,6 +149,8 @@ model Follow {
   following User @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
 }
 
 enum NotificationType {
