@@ -51,10 +51,27 @@ async function getUserProfile(userId: string, currentUserId?: string) {
     isFollowing = !!follow
   }
 
+  // Get total likes and favorites received
+  const totalLikesReceived = await prisma.like.count({
+    where: {
+      post: { authorId: userId }
+    }
+  })
+
+  const totalFavoritesReceived = await prisma.favorite.count({
+    where: {
+      post: { authorId: userId }
+    }
+  })
+
   return {
     ...user,
     isSelf: currentUserId === userId,
-    isFollowing
+    isFollowing,
+    stats: {
+      totalLikesReceived,
+      totalFavoritesReceived
+    }
   }
 }
 
@@ -215,19 +232,27 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               </div>
               
               {/* Stats */}
-              <div className="flex items-center gap-8 mt-6 pt-6 border-t border-gray-100">
-                <div className="text-center">
+              <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-100">
+                <div className="text-center flex-1">
                   <span className="block text-xl font-bold text-gray-900">{user._count.posts}</span>
                   <span className="text-sm text-gray-500">帖子</span>
                 </div>
-                <Link href={`/profile/${user.id}/followers`} className="text-center hover:bg-gray-50 px-4 py-2 rounded-lg transition-colors">
+                <Link href={`/profile/${user.id}/followers`} className="text-center flex-1 hover:bg-gray-50 py-2 rounded-lg transition-colors">
                   <span className="block text-xl font-bold text-gray-900">{user._count.followers}</span>
                   <span className="text-sm text-gray-500">粉丝</span>
                 </Link>
-                <Link href={`/profile/${user.id}/following`} className="text-center hover:bg-gray-50 px-4 py-2 rounded-lg transition-colors">
+                <Link href={`/profile/${user.id}/following`} className="text-center flex-1 hover:bg-gray-50 py-2 rounded-lg transition-colors">
                   <span className="block text-xl font-bold text-gray-900">{user._count.following}</span>
                   <span className="text-sm text-gray-500">关注</span>
                 </Link>
+                <div className="text-center flex-1">
+                  <span className="block text-xl font-bold text-gray-900">{user.stats?.totalLikesReceived || 0}</span>
+                  <span className="text-sm text-gray-500">获赞</span>
+                </div>
+                <div className="text-center flex-1">
+                  <span className="block text-xl font-bold text-gray-900">{user.stats?.totalFavoritesReceived || 0}</span>
+                  <span className="text-sm text-gray-500">获收藏</span>
+                </div>
               </div>
             </div>
           </div>

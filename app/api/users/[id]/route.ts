@@ -17,7 +17,10 @@ export async function GET(
         name: true,
         email: true,
         image: true,
+        coverImage: true,
         bio: true,
+        location: true,
+        website: true,
         createdAt: true,
         _count: {
           select: {
@@ -49,10 +52,27 @@ export async function GET(
       isFollowing = !!follow
     }
 
+    // Get actual counts
+    const totalLikesReceived = await prisma.like.count({
+      where: {
+        post: { authorId: userId }
+      }
+    })
+
+    const totalFavoritesReceived = await prisma.favorite.count({
+      where: {
+        post: { authorId: userId }
+      }
+    })
+
     return NextResponse.json({
       ...user,
       isFollowing,
-      isSelf: session?.user?.id === userId
+      isSelf: session?.user?.id === userId,
+      stats: {
+        totalLikesReceived,
+        totalFavoritesReceived
+      }
     })
   } catch (error) {
     console.error('Get user error:', error)
