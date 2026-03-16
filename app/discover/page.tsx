@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Search, TrendingUp, MapPin, Clock, Flame, ArrowRight, Loader2, RefreshCw } from 'lucide-react'
 import { TagCloud } from '@/components/discover/tag-cloud'
 import { Navbar } from '@/components/navbar'
+import { LazyImage } from '@/components/lazy-image'
 import { useSession } from 'next-auth/react'
 import { redirect, useRouter } from 'next/navigation'
-import Image from 'next/image'
 
 interface Post {
   id: string
@@ -351,7 +351,6 @@ export default function DiscoverPage() {
 }
 
 function DiscoverCard({ post, index }: { post: Post; index: number }) {
-  const [imageLoaded, setImageLoaded] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
 
   return (
@@ -364,24 +363,13 @@ function DiscoverCard({ post, index }: { post: Post; index: number }) {
     >
       {post.images[0] && (
         <div className="relative overflow-hidden">
-          <motion.img
+          <LazyImage
             src={post.images[0]}
             alt={post.content}
-            onLoad={() => setImageLoaded(true)}
-            initial={{ scale: 1.2, opacity: 0 }}
-            animate={{ 
-              scale: isHovered ? 1.1 : 1, 
-              opacity: imageLoaded ? 1 : 0 
-            }}
-            transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
-            className="w-full object-cover"
-            style={{ aspectRatio: '3/4' }}
+            aspectRatio="portrait"
+            size={index < 4 ? 'medium' : 'small'}
+            className="w-full transition-transform duration-500 group-hover:scale-105"
           />
-          
-          {/* Loading skeleton */}
-          {!imageLoaded && (
-            <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 shimmer-gradient" />
-          )}
           
           {/* Gradient overlay */}
           <motion.div 
@@ -413,6 +401,7 @@ function DiscoverCard({ post, index }: { post: Post; index: number }) {
                   src={post.author.image} 
                   alt={post.author.name || ''}
                   className="w-8 h-8 rounded-full border-2 border-white/50"
+                  loading="lazy"
                 />
               )}
             </div>

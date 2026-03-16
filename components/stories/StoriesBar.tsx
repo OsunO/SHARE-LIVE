@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Loader2 } from 'lucide-react'
-import Image from 'next/image'
 import { useSession } from 'next-auth/react'
 import { StoryViewer } from './StoryViewer'
 import { CreateStoryModal } from './CreateStoryModal'
@@ -141,12 +140,11 @@ export function StoriesBar() {
             }`}>
               <div className="w-full h-full rounded-full bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center overflow-hidden">
                 {session?.user?.image ? (
-                  <Image
+                  <img
                     src={session.user.image}
                     alt="Your avatar"
-                    width={56}
-                    height={56}
-                    className="rounded-full object-cover"
+                    loading="lazy"
+                    className="rounded-full object-cover w-14 h-14"
                   />
                 ) : (
                   <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold text-lg">
@@ -193,12 +191,11 @@ export function StoriesBar() {
               >
                 <div className="p-[2px] bg-white rounded-full">
                   {story.author.image ? (
-                    <Image
+                    <img
                       src={story.author.image}
                       alt={story.author.name || 'User'}
-                      width={56}
-                      height={56}
-                      className="rounded-full object-cover"
+                      loading="lazy"
+                      className="rounded-full object-cover w-14 h-14"
                     />
                   ) : (
                     <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center text-white font-bold text-lg">

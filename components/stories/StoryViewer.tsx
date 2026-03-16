@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
-import Image from 'next/image'
 import { useSession } from 'next-auth/react'
 
 interface Story {
@@ -148,12 +147,10 @@ export function StoryViewer({ stories, initialIndex, onClose, onView, onDelete }
       <div className="absolute top-6 left-0 right-0 z-10 flex items-center justify-between px-4">
         <div className="flex items-center gap-3">
           {currentStory.author.image && (
-            <Image
+            <img
               src={currentStory.author.image}
               alt={currentStory.author.name}
-              width={40}
-              height={40}
-              className="rounded-full border-2 border-white"
+              className="w-10 h-10 rounded-full border-2 border-white object-cover"
             />
           )}
           <div>
@@ -201,13 +198,11 @@ export function StoryViewer({ stories, initialIndex, onClose, onView, onDelete }
             className="relative w-full h-full max-w-lg mx-auto"
           >
             {currentStory.mediaType === 'IMAGE' ? (
-              <Image
+              <img
                 src={currentStory.mediaUrl}
                 alt="Story"
-                fill
-                className="object-contain"
+                className="w-full h-full object-contain"
                 onLoad={() => setIsLoading(false)}
-                priority
               />
             ) : (
               <video
