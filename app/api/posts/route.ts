@@ -70,11 +70,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '未登录' }, { status: 401 })
     }
 
-    const { content, images, aiTags, aiDescription } = await req.json()
+    const { content, images, videos, videoThumbnails, aiTags, aiDescription } = await req.json()
 
-    if (!content && (!images || images.length === 0)) {
+    if (!content && (!images || images.length === 0) && (!videos || videos.length === 0)) {
       return NextResponse.json(
-        { error: '内容和图片不能同时为空' },
+        { error: '内容、图片和视频不能同时为空' },
         { status: 400 }
       )
     }
@@ -83,6 +83,8 @@ export async function POST(req: NextRequest) {
       data: {
         content,
         images: images || [],
+        videos: videos || [],
+        videoThumbnails: videoThumbnails || [],
         aiTags: aiTags || [],
         aiDescription,
         authorId: session.user.id

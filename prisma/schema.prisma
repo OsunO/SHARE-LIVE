@@ -77,6 +77,8 @@ model Post {
   id          String   @id @default(cuid())
   content     String   @db.Text
   images      String[]
+  videos      String[] // 视频URL数组
+  videoThumbnails String[] // 视频缩略图URL数组
   tags        String[]
   aiTags      String[] // AI 自动识别的标签
   aiDescription String? @db.Text // AI 生成的图片描述
