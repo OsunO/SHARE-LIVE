@@ -78,7 +78,11 @@
   - 观看记录
 
 ### 第5周
-- [ ] **视频支持** - 上传和播放短视频
+- [x] **视频支持** - 上传和播放短视频
+  - VideoPlayer 和 VideoFeedPlayer 组件
+  - 发布页视频上传（最多3个，单文件50MB）
+  - Prisma schema 支持 videos 字段
+  - 后端 API 更新
 
 ### 第6周
 - [ ] **实时消息** - WebSocket私聊
