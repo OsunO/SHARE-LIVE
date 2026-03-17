@@ -5,12 +5,15 @@ import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   ImagePlus, X, Sparkles, Send, Loader2, ArrowLeft, 
-  Type, Hash, Smile, MapPin, Clock, CheckCircle2 
+  Type, Hash, Smile, MapPin, Clock, CheckCircle2, Video,
+  Film
 } from 'lucide-react'
 import { toast } from 'sonner'
 
 const MAX_CONTENT_LENGTH = 2000
 const MAX_IMAGES = 9
+const MAX_VIDEOS = 3
+const MAX_VIDEO_SIZE = 50 * 1024 * 1024 // 50MB
 
 // Emoji suggestions
 const EMOJI_SUGGESTIONS = ['😊', '😂', '❤️', '👍', '🎉', '🔥', '✨', '📸', '🌟', '💫']
@@ -18,6 +21,7 @@ const EMOJI_SUGGESTIONS = ['😊', '😂', '❤️', '👍', '🎉', '🔥', '�
 export default function NewPostPage() {
   const [content, setContent] = useState('')
   const [images, setImages] = useState<string[]>([])
+  const [videos, setVideos] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
   const [aiAnalyzing, setAiAnalyzing] = useState(false)
   const [aiTags, setAiTags] = useState<string[]>([])
@@ -27,6 +31,7 @@ export default function NewPostPage() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const videoInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
   const handleImageUpload = useCallback(async (files: FileList | null) => {
@@ -80,6 +85,54 @@ export default function NewPostPage() {
       setUploading(false)
     }
   }, [images.length])
+
+  const handleVideoUpload = useCallback(async (files: FileList | null) => {
+    if (!files) return
+    
+    const remainingSlots = MAX_VIDEOS - videos.length
+    if (remainingSlots <= 0) {
+      toast.error(`最多上传 ${MAX_VIDEOS} 个视频`)
+      return
+    }
+
+    const filesToUpload = Array.from(files).slice(0, remainingSlots)
+    setUploading(true)
+
+    try {
+      for (const file of filesToUpload) {
+        if (!file.type.startsWith('video/')) {
+          toast.error(`${file.name} 不是视频文件`)
+          continue
+        }
+        
+        if (file.size > MAX_VIDEO_SIZE) {
+          toast.error(`${file.name} 超过 50MB 限制`)
+          continue
+        }
+
+        const formData = new FormData()
+        formData.append('file', file)
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setVideos(prev => [...prev, data.url])
+          toast.success('视频上传成功')
+        } else {
+          toast.error('视频上传失败')
+        }
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+      toast.error('上传过程中发生错误')
+    } finally {
+      setUploading(false)
+    }
+  }, [videos.length])
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
@@ -139,8 +192,8 @@ export default function NewPostPage() {
   }
 
   const handlePublish = async () => {
-    if (!content.trim() && images.length === 0) {
-      toast.error('请填写内容或上传图片')
+    if (!content.trim() && images.length === 0 && videos.length === 0) {
+      toast.error('请填写内容或上传图片/视频')
       return
     }
 
@@ -159,6 +212,7 @@ export default function NewPostPage() {
         body: JSON.stringify({
           content: content.trim(),
           images,
+          videos,
           aiTags,
           aiDescription,
           tags: selectedTags
@@ -213,7 +267,7 @@ export default function NewPostPage() {
           
           <motion.button
             onClick={handlePublish}
-            disabled={publishing || (!content.trim() && images.length === 0)}
+            disabled={publishing || (!content.trim() && images.length === 0 && videos.length === 0)}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-5 py-2 rounded-full text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/25 hover:shadow-xl transition-all"
@@ -283,6 +337,16 @@ export default function NewPostPage() {
               className="p-2.5 bg-white text-gray-600 hover:bg-gray-100 rounded-xl transition-colors disabled:opacity-50"
             >
               <ImagePlus className="w-5 h-5" />
+            </motion.button>
+            
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => videoInputRef.current?.click()}
+              disabled={videos.length >= MAX_VIDEOS}
+              className="p-2.5 bg-white text-gray-600 hover:bg-gray-100 rounded-xl transition-colors disabled:opacity-50"
+            >
+              <Video className="w-5 h-5" />
             </motion.button>
             
             <motion.button
@@ -500,6 +564,15 @@ export default function NewPostPage() {
             accept="image/*"
             multiple
             onChange={(e) => handleImageUpload(e.target.files)}
+            className="hidden"
+          />
+
+          <input
+            ref={videoInputRef}
+            type="file"
+            accept="video/*"
+            multiple
+            onChange={(e) => handleVideoUpload(e.target.files)}
             className="hidden"
           />
         </motion.div>

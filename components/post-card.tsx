@@ -5,12 +5,14 @@ import Link from 'next/link'
 import { Heart, MessageCircle, Bookmark, Share2, MoreHorizontal, ChevronDown, ChevronUp } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import { LazyImage } from './lazy-image'
+import { VideoFeedPlayer } from './video-player'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface Post {
   id: string
   content: string
   images: string[]
+  videos?: string[]
   createdAt: string
   author: {
     id: string
@@ -432,6 +434,22 @@ export function PostCard({ post, currentUserId, onLikeUpdate, onFavoriteUpdate, 
       {post.images.length > 0 && (
         <div className="px-4 pb-3">
           <ImageGrid images={post.images} postId={post.id} onImageClick={onImageClick} />
+        </div>
+      )}
+
+      {/* Videos */}
+      {post.videos && post.videos.length > 0 && (
+        <div className="px-4 pb-3">
+          <div className="grid gap-2">
+            {post.videos.map((video, idx) => (
+              <VideoFeedPlayer
+                key={idx}
+                src={video}
+                poster={post.images[idx]}
+                className="w-full aspect-video"
+              />
+            ))}
+          </div>
         </div>
       )}
 
