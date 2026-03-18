@@ -65,6 +65,12 @@ model User {
   stories       Story[]
   storyViews    StoryView[]
   moderationReviews ModerationLog[] // 审核记录
+  
+  // 私聊消息关联
+  conversationsAsUser1 Conversation[] @relation("conversationUser1")
+  conversationsAsUser2 Conversation[] @relation("conversationUser2")
+  sentMessages         Message[]      @relation("messageSender")
+  receivedMessages     Message[]      @relation("messageReceiver")
 }
 
 model VerificationToken {
@@ -253,4 +259,60 @@ model StoryView {
   @@unique([storyId, viewerId]) // 每人每个故事只记录一次
   @@index([storyId])
   @@index([viewerId])
+}
+
+// ==================== 私聊消息系统 ====================
+
+// 会话模型 - 两个用户之间的聊天会话
+model Conversation {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // 参与者
+  user1Id     String
+  user2Id     String
+  
+  // 最后一条消息预览
+  lastMessage   String?  @db.Text
+  lastMessageAt DateTime?
+  
+  // 关联
+  user1       User     @relation("conversationUser1", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2       User     @relation("conversationUser2", fields: [user2Id], references: [id], onDelete: Cascade)
+  messages    Message[]
+  
+  // 确保两个用户之间只有一个会话
+  @@unique([user1Id, user2Id])
+  @@index([user1Id])
+  @@index([user2Id])
+  @@index([updatedAt])
+}
+
+// 消息模型
+model Message {
+  id             String   @id @default(cuid())
+  content        String   @db.Text
+  images         String[] // 支持图片消息
+  createdAt      DateTime @default(now())
+  
+  // 发送者和接收者
+  senderId       String
+  receiverId     String
+  conversationId String
+  
+  // 消息状态
+  read           Boolean  @default(false)
+  readAt         DateTime?
+  
+  // 关联
+  sender         User          @relation("messageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver       User          @relation("messageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  conversation   Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([conversationId])
+  @@index([createdAt])
+  @@index([read])
 }

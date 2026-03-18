@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
-import { PlusCircle, User, LogOut, Home, Compass, Bell, Menu, X } from 'lucide-react'
+import { PlusCircle, User, LogOut, Home, Compass, Bell, Menu, X, MessageCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePathname } from 'next/navigation'
@@ -40,6 +40,7 @@ export function Navbar({ user }: NavbarProps) {
     { href: '/', icon: Home, label: '首页' },
     { href: '/discover', icon: Compass, label: '发现' },
     { href: '/notifications', icon: Bell, label: '通知' },
+    { href: '/messages', icon: MessageCircle, label: '私信' },
   ]
 
   const isActive = (href: string) => {
