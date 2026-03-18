@@ -1,5 +1,5 @@
 # 使用 Node.js Debian 官方镜像
-FROM hub.rat.dev/library/node:20-slim AS base
+FROM node:20-slim AS base
 
 # 安装依赖
 FROM base AS deps
