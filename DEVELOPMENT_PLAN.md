@@ -85,6 +85,12 @@
   - 后端 API 更新
 
 ### 第6周
+- [x] **内容审核** - AI内容安全检测
+  - 数据库: Post 审核状态字段 + ModerationLog 表
+  - 审核 API: check/pending/approve/reject
+  - 文本/图片/视频审核 (lib/moderation.ts)
+  - 发布时自动审核
+  - 管理员审核页面 /admin/moderation
 - [ ] **实时消息** - WebSocket私聊
 - [ ] **内容审核** - AI内容安全检测
 
