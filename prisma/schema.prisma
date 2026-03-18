@@ -48,6 +48,7 @@ model User {
   bio              String?   @db.Text
   location         String?   // 位置
   website          String?   // 个人网站
+  isAdmin          Boolean   @default(false) // 管理员标识
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -63,6 +64,7 @@ model User {
   actorNotifications Notification[] @relation("actorNotifications")
   stories       Story[]
   storyViews    StoryView[]
+  moderationReviews ModerationLog[] // 审核记录
 }
 
 model VerificationToken {
@@ -71,6 +73,13 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// 内容审核状态枚举
+enum ModerationStatus {
+  PENDING    // 待审核
+  APPROVED   // 已通过
+  REJECTED   // 已拒绝
 }
 
 model Post {
@@ -87,15 +96,40 @@ model Post {
   updatedAt   DateTime @updatedAt
   authorId    String
 
+  // 内容审核字段
+  moderationStatus   ModerationStatus @default(PENDING)
+  moderationReason   String?   // 审核原因（AI或管理员填写）
+  moderatedAt        DateTime? // 审核时间
+  moderatedBy        String?   // 审核管理员ID（人工审核时）
+
   author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   comments  Comment[]
   likes     Like[]
   favorites Favorite[]
   notifications Notification[]
+  moderationLogs ModerationLog[]
 
   @@index([authorId])
   @@index([createdAt])
   @@index([published])
+  @@index([moderationStatus])
+}
+
+// 审核日志表
+model ModerationLog {
+  id          String   @id @default(cuid())
+  postId      String
+  action      String   // APPROVED | REJECTED | AUTO_APPROVED | AUTO_REJECTED
+  reason      String?  @db.Text
+  details     String?  @db.Text // JSON格式的详细信息
+  createdAt   DateTime @default(now())
+  reviewerId  String?  // 管理员ID（人工审核时）
+
+  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  reviewer    User?    @relation(fields: [reviewerId], references: [id], onDelete: SetNull)
+
+  @@index([postId])
+  @@index([createdAt])
 }
 
 model Comment {

@@ -3,7 +3,7 @@ type OpenAIClient = any
 
 let openaiClient: OpenAIClient | null = null
 
-async function getOpenAIClient(): Promise<OpenAIClient | null> {
+export async function getOpenAIClient(): Promise<OpenAIClient | null> {
   if (!openaiClient && process.env.OPENAI_API_KEY) {
     const { default: OpenAI } = await import('openai')
     openaiClient = new OpenAI({
@@ -14,7 +14,7 @@ async function getOpenAIClient(): Promise<OpenAIClient | null> {
   return openaiClient
 }
 
-const MODEL = process.env.OPENAI_MODEL || 'kimi-k2.5'
+export const MODEL = process.env.OPENAI_MODEL || 'kimi-k2.5'
 
 export async function analyzeImage(base64Image: string) {
   const openai = await getOpenAIClient()
