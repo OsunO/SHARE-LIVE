@@ -111,6 +111,16 @@ export async function moderateImage(imageUrl: string): Promise<ModerationResult>
     }
   }
 
+  // 检查是否为本地路径或相对路径（AI API 无法访问）
+  if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+    // 本地路径，跳过 AI 审核，自动通过
+    return {
+      status: 'APPROVED',
+      reason: '本地图片，自动通过',
+      confidence: 1.0
+    }
+  }
+
   try {
     // 尝试使用 vision API 分析图片
     const response = await openai.chat.completions.create({
